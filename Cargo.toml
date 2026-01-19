@@ -1,0 +1,72 @@
+[workspace]
+members = [
+    "crates/git-gov-core",
+    "crates/git-gov-cli",
+    "crates/git-gov-daemon",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["git-gov project"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/git-gov/git-gov"
+
+# Centralized dependency management
+# This section defines the versions used across all member crates.
+[workspace.dependencies]
+# UI
+clap = { version = "4.5", features = ["derive", "string", "env"] }
+
+# Git
+# LEAN: We disable default features to avoid system-level OpenSSL if possible
+# and rely on vendored-libgit2 for static linking portability.
+git2 = { version = "0.20", default-features = false, features = ["vendored-libgit2"] }
+
+# Surveillance
+# LEAN: We disable default features to verify if we can avoid extra deps.
+# We explicitly enable cross-platform backends.
+notify = { version = "8.2", default-features = false, features = ["macos_fsevent"] }
+
+# Entropy & Compression
+zstd = { version = "0.13", default-features = false }
+
+# Statistics
+# LEAN: CRITICAL - Disable default features to avoid 'nalgebra' bloat.
+# We only enable the features strictly needed for univariate stats.
+statrs = { version = "0.18", default-features = false }
+
+# Cryptography
+ed25519-dalek = { version = "2.1", features = ["fast", "rand_core"] }
+sha2 = "0.10"
+
+# Data
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error Handling & Utilities
+anyhow = "1.0"
+thiserror = "2.0"
+chrono = { version = "0.4", features = ["serde"] }
+dirs = "5.0"
+tokio = { version = "1.40", features = ["full"] }
+tracing = "0.1"
+
+# Testing dependencies
+proptest = "1.4"
+quickcheck = "1.0"
+rand = "0.8"
+test-strategy = "0.4"
+
+# Internal References
+git-gov-core = { path = "crates/git-gov-core" }
+
+# Profile configurations for "LEAN" development (Minimal Binary Size)
+# References: [29, 30]
+[profile.release]
+opt-level = "z"     # Optimize for binary size (z > s in many Rust cases)
+lto = true          # Enable Link Time Optimization (removes dead code)
+codegen-units = 1   # Reduce parallelism to allow better global optimization
+panic = "abort"     # Remove panic unwinding strings/symbols (massive saving)
+strip = true        # Strip debug symbols from the binary
