@@ -1,0 +1,19 @@
+Git-Gov Integration Test Report
+
+Generated: 2026-01-19T20:13:00.225945081-03:00
+
+Summary:
+  Tests Passed: 1/1
+  Pass Rate: 100.0%
+  Average Burstiness: 0.162
+  Average NCD: 0.781
+  Average Human Score: 0.410
+
+Detailed Results:
+  ✅: test_complete_validation_pipeline
+    Complete pipeline validation: burstiness=0.162, ncd=0.781, score=0.410, human=true, ai=false, privacy=true, overall=true
+    Burstiness: 0.162
+    NCD: 0.781
+    Human Score: 0.410
+    Threshold: 0.300
+

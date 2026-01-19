@@ -1,0 +1,32 @@
+[package]
+name = "git-gov-core"
+version.workspace = true
+edition.workspace = true
+description = "Core logic for Decentralized Code Governance metrics and crypto."
+
+[dependencies]
+# Workspace dependencies inherited
+git2 = { workspace = true }
+notify = { workspace = true }
+zstd = { workspace = true }
+statrs = { workspace = true }
+ed25519-dalek = { workspace = true }
+sha2 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+# Randomness for key generation
+rand = "0.8"
+
+# Async runtime and utilities
+tokio = { version = "1.40", features = ["full"] }
+
+# Logging
+tracing = "0.1"
+
+[dev-dependencies]
+# Testing frameworks
+proptest = "1.4"
+quickcheck = "1.0"
+test-strategy = "0.4"

@@ -1,0 +1,9 @@
+[
+  {
+    "test_name": "test_burstiness_properties",
+    "passed": true,
+    "timestamp": "2026-01-19T20:13:00.229485340-03:00",
+    "details": "Property-based burstiness tests passed",
+    "metrics": null
+  }
+]
