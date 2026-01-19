@@ -1,0 +1,10 @@
+nohup: no se tendrá en cuenta la entrada
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/lvergara/ionet-workspace/git-gov/crates/git-gov-cli/Cargo.toml
+workspace: /home/lvergara/ionet-workspace/git-gov/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/lvergara/ionet-workspace/git-gov/crates/git-gov-daemon/Cargo.toml
+workspace: /home/lvergara/ionet-workspace/git-gov/Cargo.toml
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.16s
+     Running `target/debug/git-gov-daemon`
+[2m2026-01-19T21:11:55.381473Z[0m [32m INFO[0m [2mgit_gov_daemon[0m[2m:[0m Starting git-gov daemon
