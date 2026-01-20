@@ -10,7 +10,7 @@ use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use anyhow::{Result, Context};
 use std::path::PathBuf;
-use tracing::{info, error, debug};
+use tracing::{info, error};
 use std::time::UNIX_EPOCH;
 
 pub struct LinuxBackend {

@@ -633,9 +633,13 @@ impl GitMonitor {
                 .and_then(|m| m.as_ref().map(|metrics| (metrics.velocity_entropy / 8.0).min(1.0)))
                 .unwrap_or(0.0);
 
-            // [TERMODINÁMICA] Intentamos pagar el costo con la batería
+            // [TERMODINÁMICA] APLICAMOS DIFICULTAD (min_entropy)
+            // Default 2.5 -> Factor 1.0. Higher min_entropy -> Higher cost.
+            let difficulty_factor = self.min_entropy / 2.5;
+            let adjusted_cost = entropic_cost * difficulty_factor;
+
             let has_energy = if let Ok(mut batt) = self.battery.write() {
-                batt.consume(entropic_cost)
+                batt.consume(adjusted_cost)
             } else {
                 false
             };
