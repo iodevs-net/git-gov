@@ -29,6 +29,12 @@ enum Commands {
         #[arg(short, long, default_value = ".")]
         path: String,
     },
+    /// Desactiva git-gov en el repositorio actual (elimina hooks)
+    Disable {
+        /// Repository path (default: current directory)
+        #[arg(short, long, default_value = ".")]
+        path: String,
+    },
     /// Start the git-gov daemon
     Daemon {
         /// Configuration file path
@@ -40,6 +46,10 @@ enum Commands {
     },
     /// Check daemon status
     Status,
+    /// Activa el centinela (inicia el daemon en background)
+    On,
+    /// Desactiva el centinela (detiene el daemon)
+    Off,
     /// View real-time kinematic metrics
     Metrics {
         /// Output only the human score (short format)
@@ -115,6 +125,21 @@ async fn main() {
                 }
             }
         }
+        Commands::Disable { path } => {
+            let repo_path = Path::new(&path);
+            match open_repository(repo_path) {
+                Ok(repo) => {
+                    match git_gov_core::git::remove_hooks(&repo) {
+                        Ok(_) => println!("✅ Git-Gov disabled: Hooks removed successfully"),
+                        Err(e) => eprintln!("❌ Failed to remove hooks: {}", e),
+                    }
+                }
+                Err(e) => {
+                    eprintln!("❌ Failed to open repository: {}", e);
+                    process::exit(1);
+                }
+            }
+        }
         Commands::Daemon { config, daemon } => {
             if daemon {
                 println!("Starting git-gov daemon in background with config: {}", config);
@@ -142,6 +167,45 @@ async fn main() {
                     eprintln!("❌ Could not connect to daemon: {}. Is it running?", e);
                 }
             }
+        }
+        Commands::On => {
+            use std::process::{Command, Stdio};
+            println!("🚀 Encendiendo el centinela termodinámico...");
+            
+            match Command::new("git-gov-daemon")
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn() {
+                    Ok(_) => {
+                        println!("✅ Centinela activado en background.");
+                        println!("Usa 'git-gov status' para verificar.");
+                    },
+                    Err(_) => {
+                        // Reintento con path explícito por si no está en PATH todavía
+                        match Command::new("/usr/local/bin/git-gov-daemon")
+                            .stdin(Stdio::null())
+                            .stdout(Stdio::null())
+                            .stderr(Stdio::null())
+                            .spawn() {
+                                Ok(_) => println!("✅ Centinela activado en background."),
+                                Err(e) => eprintln!("❌ Error al encender el centinela: {}. ¿Está instalado?", e),
+                            }
+                    }
+                }
+        }
+        Commands::Off => {
+            use std::process::Command;
+            println!("🛑 Apagando el centinela...");
+            
+            match Command::new("pkill")
+                .arg("-x") // Match exact name
+                .arg("git-gov-daemon")
+                .status() {
+                    Ok(status) if status.success() => println!("✅ Centinela desactivado."),
+                    Ok(_) => println!("⚠️ El centinela no parecía estar corriendo."),
+                    Err(e) => eprintln!("❌ Error al apagar el centinela: {}", e),
+                }
         }
         Commands::Metrics { short } => {
             match query_daemon(git_gov_core::protocol::Request::GetMetrics).await {

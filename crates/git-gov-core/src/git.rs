@@ -87,6 +87,23 @@ fi
     Ok(())
 }
 
+/// Elimina los hooks de git-gov del repositorio
+pub fn remove_hooks(repo: &Repository) -> Result<(), String> {
+    let hooks_dir = repo.path().join("hooks");
+    for hook in &["prepare-commit-msg", "pre-commit"] {
+        let path = hooks_dir.join(hook);
+        if path.exists() {
+            // Solo borramos si el archivo contiene "git-gov" para no borrar hooks de terceros
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                if content.contains("git-gov") {
+                    std::fs::remove_file(&path).map_err(|e| e.to_string())?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Obtiene el diff de los archivos staged
 pub fn get_staged_diff(repo: &Repository) -> Result<String, String> {
     let mut opts = git2::DiffOptions::new();

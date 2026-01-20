@@ -56,10 +56,11 @@ make install
 ## 🚀 Despliegue de la Aduana
 
 ### 1. Iniciar el Centinela
-El daemon debe estar corriendo para acumular tu energía mientras trabajas:
+Para que el sistema empiece a acumular tu energía en background:
 ```bash
-git-gov daemon
+git-gov on
 ```
+*Usa `git-gov off` para detenerlo en cualquier momento.*
 
 ### 2. Activar la Soberanía
 En tu repositorio, inicializa la aduana termodinámica:
@@ -71,7 +72,8 @@ git-gov init
 ### 3. Consultar tu Reserva
 ¿Cuánta energía de atención te queda?
 ```bash
-git-gov metrics
+git-gov status   # Para ver si está corriendo
+git-gov metrics  # Para ver tu energía kinética
 ```
 
 ---

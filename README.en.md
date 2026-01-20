@@ -56,10 +56,11 @@ make install
 ## 🚀 Deploying the Customs
 
 ### 1. Start the Sentinel
-The daemon must be running to accumulate your energy as you work:
+To start accumulating energy in the background:
 ```bash
-git-gov daemon
+git-gov on
 ```
+*Use `git-gov off` to stop it at any time.*
 
 ### 2. Activate Sovereignty
 In your repository, initialize the thermodynamic customs:
@@ -71,7 +72,8 @@ git-gov init
 ### 3. Check Your Reserves
 How much attention energy do you have left?
 ```bash
-git-gov metrics
+git-gov status   # To check if it's running
+git-gov metrics  # To see your kinetic energy
 ```
 
 ---
