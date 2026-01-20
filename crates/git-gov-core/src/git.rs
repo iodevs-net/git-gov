@@ -127,8 +127,52 @@ pub fn get_staged_diff(repo: &Repository) -> Result<String, String> {
     Ok(diff_text)
 }
 
-/// Registra una clave pública en el repositorio
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+struct TrustConfig {
+    keys: Vec<TrustedKey>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct TrustedKey {
+    alias: String,
+    public_key: String,
+    #[serde(default)]
+    role: String,
+}
+
+/// Registra una clave pública en el repositorio (preferentemente en trust.toml)
 pub fn register_public_key(repo: &git2::Repository, key_hex: &str, alias: &str) -> Result<(), String> {
+    // 1. Try to use trust.toml first (Distributed Trust)
+    let trust_toml_path = repo.workdir().map(|w| w.join("trust.toml"));
+    
+    if let Some(path) = trust_toml_path {
+        let mut config = if path.exists() {
+            let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+            toml::from_str::<TrustConfig>(&content).unwrap_or(TrustConfig { keys: vec![] })
+        } else {
+            TrustConfig { keys: vec![] }
+        };
+
+        // Check for duplicates
+        if !config.keys.iter().any(|k| k.alias == alias) {
+            config.keys.push(TrustedKey {
+                alias: alias.to_string(),
+                public_key: key_hex.to_string(),
+                role: "Contributor".to_string(),
+            });
+
+            let toml_string = toml::to_string_pretty(&config).map_err(|e| e.to_string())?;
+            std::fs::write(&path, toml_string).map_err(|e| e.to_string())?;
+            return Ok(());
+        } else {
+             // Update existing? For now, just skip or error.
+             return Err(format!("Alias '{}' already exists in trust.toml", alias));
+        }
+    }
+
+    // 2. Fallback to local .git/git-gov/trusted_keys (Legacy)
     let gov_dir = repo.path().join("git-gov");
     if !gov_dir.exists() {
         std::fs::create_dir_all(&gov_dir).map_err(|e| e.to_string())?;
@@ -148,22 +192,84 @@ pub fn register_public_key(repo: &git2::Repository, key_hex: &str, alias: &str) 
     Ok(())
 }
 
-/// Obtiene el mapa de claves públicas confiables
+/// Obtiene el mapa de claves públicas confiables (trust.toml + legacy)
 pub fn get_trusted_keys(repo: &git2::Repository) -> Result<std::collections::HashMap<String, String>, String> {
-    let keys_file = repo.path().join("git-gov").join("trusted_keys");
-    if !keys_file.exists() {
-        return Ok(std::collections::HashMap::new());
-    }
-    
-    let content = std::fs::read_to_string(keys_file).map_err(|e| e.to_string())?;
     let mut keys = std::collections::HashMap::new();
-    for line in content.lines() {
-        let parts: Vec<&str> = line.split(':').collect();
-        if parts.len() == 2 {
-            keys.insert(parts[0].to_string(), parts[1].to_string());
+
+    // 1. Read trust.toml (Distributed)
+    if let Some(workdir) = repo.workdir() {
+        let trust_toml = workdir.join("trust.toml");
+        if trust_toml.exists() {
+            if let Ok(content) = std::fs::read_to_string(trust_toml) {
+                if let Ok(config) = toml::from_str::<TrustConfig>(&content) {
+                    for k in config.keys {
+                        keys.insert(k.alias, k.public_key);
+                    }
+                }
+            }
         }
     }
+
+    // 2. Read legacy .git/git-gov/trusted_keys (Local override)
+    let legacy_file = repo.path().join("git-gov").join("trusted_keys");
+    if legacy_file.exists() {
+        if let Ok(content) = std::fs::read_to_string(legacy_file) {
+            for line in content.lines() {
+                let parts: Vec<&str> = line.split(':').collect();
+                if parts.len() == 2 {
+                    keys.insert(parts[0].to_string(), parts[1].to_string());
+                }
+            }
+        }
+    }
+
     Ok(keys)
+}
+
+#[derive(Debug, Serialize)]
+pub struct GovernanceEntry {
+    pub commit: String,
+    pub author: String,
+    pub score: f64,
+    pub timestamp: i64,
+}
+
+/// Obtiene el historial de gobernanza (commits firmados)
+pub fn get_governance_history(repo: &git2::Repository, limit: usize) -> Result<Vec<GovernanceEntry>, String> {
+    let mut entries = Vec::new();
+    let mut revwalk = repo.revwalk().map_err(|e| e.to_string())?;
+    revwalk.push_head().map_err(|e| e.to_string())?;
+    
+    // Sort by time descending
+    revwalk.set_sorting(git2::Sort::TIME).map_err(|e| e.to_string())?;
+
+    for oid in revwalk.take(limit) {
+        if let Ok(oid) = oid {
+            if let Ok(commit) = repo.find_commit(oid) {
+                let message = commit.message().unwrap_or("");
+                for line in message.lines() {
+                     if line.starts_with("git-gov-score:") {
+                        let score_part = line.replace("git-gov-score:", "").trim().to_string();
+                        // Format: score=0.85:sig=...
+                        let parts: Vec<&str> = score_part.split(":sig=").collect();
+                        if !parts.is_empty() {
+                            let score_str = parts[0].replace("score=", "");
+                             if let Ok(score) = score_str.parse::<f64>() {
+                                 entries.push(GovernanceEntry {
+                                     commit: oid.to_string(),
+                                     author: commit.author().name().unwrap_or("Unknown").to_string(),
+                                     score,
+                                     timestamp: commit.time().seconds(),
+                                 });
+                             }
+                        }
+                     }
+                }
+            }
+        }
+    }
+    
+    Ok(entries)
 }
 
 #[cfg(test)]

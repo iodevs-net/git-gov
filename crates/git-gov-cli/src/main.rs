@@ -81,6 +81,15 @@ enum Commands {
         #[command(subcommand)]
         action: ConfigAction,
     },
+    /// Genera reporte de auditoría
+    Report {
+        /// Número de commits a analizar
+        #[arg(short, long, default_value_t = 100)]
+        limit: usize,
+        /// Formato de salida (text, json, md)
+        #[arg(short, long, default_value = "text")]
+        format: String,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -96,6 +105,60 @@ async fn main() {
     let cli = Cli::parse();
 
     match cli.command {
+        Commands::Report { limit, format } => {
+            let repo = match open_repository(Path::new(".")) {
+                Ok(repo) => repo,
+                Err(e) => {
+                    eprintln!("❌ Error opening repository: {}", e);
+                    process::exit(1);
+                }
+            };
+            
+            match git_gov_core::git::get_governance_history(&repo, limit) {
+                Ok(entries) => {
+                    if format == "json" {
+                        println!("{}", serde_json::to_string_pretty(&entries).unwrap());
+                        return;
+                    }
+                    
+                    let total_commits = entries.len();
+                    let total_score: f64 = entries.iter().map(|e| e.score).sum();
+                    let avg_score = if total_commits > 0 { total_score / total_commits as f64 } else { 0.0 };
+                    
+                    let mut authors = std::collections::HashMap::new();
+                    for e in &entries {
+                        *authors.entry(e.author.clone()).or_insert(0.0) += e.score;
+                    }
+                    
+                    if format == "md" {
+                         println!("# Governance Audit Report");
+                         println!("- **Analyzed Commits:** {}", total_commits);
+                         println!("- **Total Energy:** {:.2}", total_score);
+                         println!("- **Average Entropy:** {:.2}", avg_score);
+                         println!("\n## Top Contributors (by Energy)");
+                         println!("| Author | Energy |");
+                         println!("|--------|--------|");
+                         for (author, score) in &authors {
+                             println!("| {} | {:.2} |", author, score);
+                         }
+                    } else {
+                        println!("📊 Governance Report (Last {} commits)", limit);
+                        println!("--------------------------------");
+                        println!("  Commits Analyzed: {}", total_commits);
+                        println!("  Total Energy:     {:.2}", total_score);
+                        println!("  Average Score:    {:.2}", avg_score);
+                        println!("\n🏆 Top Contributors:");
+                        for (author, score) in authors {
+                            println!("  - {}: {:.2}", author, score);
+                        }
+                    }
+                }
+                Err(e) => {
+                     eprintln!("❌ Failed to generate report: {}", e);
+                     process::exit(1);
+                }
+            }
+        }
         Commands::SystemCheck { verbose } => {
             match sentinel_self_check() {
                 Ok(report) => {
@@ -280,10 +343,30 @@ async fn main() {
             use git_gov_core::git::{get_trusted_keys};
             use git_gov_core::crypto::{verify_signature, VerifyingKey};
 
+            #[derive(serde::Serialize)]
+            struct VerificationReport {
+                status: String,
+                commit: String,
+                signer: Option<String>,
+                score: Option<f64>,
+                reason: Option<String>,
+            }
+
             let repo = match open_repository(Path::new(".")) {
                 Ok(repo) => repo,
                 Err(e) => {
-                    eprintln!("❌ Error: {}", e);
+                    let report = VerificationReport {
+                        status: "error".to_string(),
+                        commit: commit.clone(),
+                        signer: None,
+                        score: None,
+                        reason: Some(format!("Error opening repository: {}", e)),
+                    };
+                    if format == "json" {
+                        println!("{}", serde_json::to_string(&report).unwrap());
+                    } else {
+                        eprintln!("❌ Error opening repository: {}", e);
+                    }
                     process::exit(1);
                 }
             };
@@ -291,7 +374,18 @@ async fn main() {
             let commit_obj = match repo.revparse_single(&commit) {
                 Ok(obj) => obj.peel_to_commit().unwrap(),
                 Err(e) => {
-                    eprintln!("❌ Commit not found: {}", e);
+                    let report = VerificationReport {
+                        status: "error".to_string(),
+                        commit: commit.clone(),
+                        signer: None,
+                        score: None,
+                        reason: Some(format!("Commit not found: {}", e)),
+                    };
+                    if format == "json" {
+                        println!("{}", serde_json::to_string(&report).unwrap());
+                    } else {
+                        eprintln!("❌ Commit not found: {}", e);
+                    }
                     process::exit(1);
                 }
             };
@@ -311,20 +405,12 @@ async fn main() {
                         let sig_hex = parts[1];
                         let sig_bytes = hex::decode(sig_hex).unwrap_or_default();
                         
-                        // Reconstruir el mensaje que fue firmado
-                        // (En el PoC era "VALID:cost=X:ts=Y", pero para el commit usaremos el score directo)
-                        // Para simplificar esta v1 de verificación de PR, verificamos que la firma sea válida
-                        // para CUALQUIER clave confiable sobre el hash del commit o el score.
-                        
                         let mut verified = false;
                         let mut signer_alias = "Unknown";
 
                         for (alias, key_hex) in &trusted_keys {
                             let key_bytes = hex::decode(key_hex).unwrap_or_default();
                             if let Ok(verifying_key) = VerifyingKey::from_bytes(&key_bytes.try_into().unwrap_or([0;32])) {
-                                // El mensaje firmado por el daemon en VerifyWork era VALID:cost=...
-                                // Pero el hook lo guarda parseado. 
-                                // Para esta versión, aceptamos la firma si es válida.
                                 if verify_signature(&verifying_key, parts[0].as_bytes(), &sig_bytes).unwrap_or(false) {
                                     verified = true;
                                     signer_alias = alias;
@@ -334,8 +420,16 @@ async fn main() {
                         }
 
                         if verified {
+                            let score_val = score_str.parse::<f64>().ok();
                             if format == "json" {
-                                println!("{{\"status\": \"verified\", \"signer\": \"{}\", \"score\": {}}}", signer_alias, score_str);
+                                let report = VerificationReport {
+                                    status: "verified".to_string(),
+                                    commit: commit.clone(),
+                                    signer: Some(signer_alias.to_string()),
+                                    score: score_val,
+                                    reason: None,
+                                };
+                                println!("{}", serde_json::to_string(&report).unwrap());
                             } else {
                                 println!("✅ Commit VERIFICADO Criptográficamente");
                                 println!("   Firmante: {}", signer_alias);
@@ -349,7 +443,14 @@ async fn main() {
 
             if !found {
                 if format == "json" {
-                    println!("{{\"status\": \"failed\", \"reason\": \"no_valid_signature\"}}");
+                     let report = VerificationReport {
+                        status: "failed".to_string(),
+                        commit: commit.clone(),
+                        signer: None,
+                        score: None,
+                        reason: Some("no_valid_signature".to_string()),
+                    };
+                    println!("{}", serde_json::to_string(&report).unwrap());
                 } else {
                     eprintln!("❌ FALLO DE VERIFICACIÓN: No se encontró firma válida de Git-Gov.");
                 }
