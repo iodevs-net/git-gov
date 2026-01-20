@@ -278,7 +278,8 @@ impl FileMonitor {
         loop {
             tokio::select! {
                 _ = shutdown.changed() => {
-                    match *shutdown.borrow() {
+                    let current = *shutdown.borrow();
+                    match current {
                         Shutdown::Run => {}
                         Shutdown::Immediate => {
                             break;
@@ -455,24 +456,32 @@ pub struct GitMonitor {
     shutdown: CancellationToken,
     mouse_sentinel: MouseSentinel,
     mouse_rx: mpsc::Receiver<MouseEvent>,
+    file_rx: mpsc::Receiver<EditEvent>,
     analysis_interval: Duration,
     latest_metrics: Arc<RwLock<Option<KinematicMetrics>>>,
+    latest_coupling: Arc<RwLock<f64>>,
     events_captured: Arc<RwLock<usize>>,
+    watch_root: PathBuf,
 }
 
 impl GitMonitor {
     pub fn new(
         config: GitMonitorConfig,
         mouse_rx: mpsc::Receiver<MouseEvent>,
+        file_rx: mpsc::Receiver<EditEvent>,
+        watch_root: PathBuf,
         shutdown: CancellationToken,
     ) -> Result<Self, GitMonitorError> {
         Ok(Self {
             shutdown,
             mouse_sentinel: MouseSentinel::new(config.mouse_buffer_size),
             mouse_rx,
+            file_rx,
             analysis_interval: config.analysis_interval,
             latest_metrics: Arc::new(RwLock::new(None)),
+            latest_coupling: Arc::new(RwLock::new(1.0)),
             events_captured: Arc::new(RwLock::new(0)),
+            watch_root,
         })
     }
 
@@ -480,12 +489,16 @@ impl GitMonitor {
         self.latest_metrics.clone()
     }
 
+    pub fn get_coupling_ref(&self) -> Arc<RwLock<f64>> {
+        self.latest_coupling.clone()
+    }
+
     pub fn get_events_captured_ref(&self) -> Arc<RwLock<usize>> {
         self.events_captured.clone()
     }
 
     pub async fn start(mut self) -> Result<(), GitMonitorError> {
-        info!("GitMonitor started");
+        info!("GovMonitor (Git-Gov) started with Cognitive Coupling");
         let mut interval = tokio::time::interval(self.analysis_interval);
 
         loop {
@@ -502,6 +515,10 @@ impl GitMonitor {
                     }
                 }
 
+                Some(file_event) = self.file_rx.recv() => {
+                    self.handle_file_event(file_event).await;
+                }
+
                 _ = interval.tick() => {
                     self.run_analysis();
                 }
@@ -512,15 +529,44 @@ impl GitMonitor {
         Ok(())
     }
 
+    async fn handle_file_event(&mut self, event: EditEvent) {
+        if event.kind == EditKind::Delete {
+            return;
+        }
+
+        let full_path = self.watch_root.join(&event.rel_path);
+        
+        // [LEAN] Solo leemos archivos pequeños o fragmentos para evitar lag de IO
+        if let Ok(content) = tokio::fs::read_to_string(&full_path).await {
+            use crate::complexity::estimate_code_complexity;
+            use crate::stats::calculate_coupling_score;
+
+            let code_complexity = estimate_code_complexity(&content);
+            
+            // Obtenemos la entropía motora actual (usamos velocity_entropy como proxy)
+            let motor_entropy = self.latest_metrics.read()
+                .ok()
+                .and_then(|m| m.as_ref().map(|metrics| (metrics.velocity_entropy / 8.0).min(1.0)))
+                .unwrap_or(0.0);
+
+            let coupling = calculate_coupling_score(code_complexity, motor_entropy);
+            
+            if let Ok(mut latest) = self.latest_coupling.write() {
+                *latest = (*latest * 0.7) + (coupling * 0.3); // Suavizado exponencial
+            }
+
+            info!(
+                "File change: {:?} | Complexity: {:.2} | Coupling: {:.2}",
+                event.rel_path.file_name().unwrap_or_default(),
+                code_complexity,
+                coupling
+            );
+        }
+    }
+
     fn run_analysis(&mut self) {
         match self.mouse_sentinel.analyze() {
             Ok(metrics) => {
-                info!(
-                    "Mouse metrics | LDLJ: {:.2} | Entropy: {:.2} | Throughput: {:.2}",
-                    metrics.ldlj,
-                    metrics.velocity_entropy,
-                    metrics.throughput
-                );
                 if let Ok(mut latest) = self.latest_metrics.write() {
                     *latest = Some(metrics);
                 }
@@ -531,6 +577,7 @@ impl GitMonitor {
         }
     }
 }
+
 
 #[derive(Debug, Error)]
 pub enum GitMonitorError {

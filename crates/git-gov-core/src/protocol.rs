@@ -31,6 +31,7 @@ pub enum Response {
         entropy: f64,
         throughput: f64,
         human_score: f64,
+        coupling: f64,
     },
     /// Respuesta a Ping
     Pong,

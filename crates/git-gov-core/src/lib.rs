@@ -6,6 +6,7 @@ pub mod git;
 pub mod monitor;
 pub mod mouse_sentinel;
 pub mod stats;
+pub mod complexity;
 
 use sha2::{Digest, Sha256};
 use ed25519_dalek::SigningKey;

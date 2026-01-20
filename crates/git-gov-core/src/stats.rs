@@ -105,6 +105,26 @@ pub fn validate_ai_contribution(score: f64, threshold: f64) -> bool {
     score <= threshold
 }
 
+/// Calcula el Score de Acoplamiento Cognitivo-Motor.
+/// 
+/// Mide la sincronía entre la complejidad del código (`code_complexity`) y el
+/// esfuerzo biomecánico detectado (`motor_entropy`).
+/// 
+/// Un valor cercano a 1.0 indica un acoplamiento coherente (trabajo humano real).
+/// Un valor cercano a 0.0 indica un desacoplo (ej. inyección masiva de código complejo sin pausas cognitivas).
+pub fn calculate_coupling_score(code_complexity: f64, motor_entropy: f64) -> f64 {
+    if code_complexity < 0.1 {
+        // Para código muy simple (boilerplate), cualquier esfuerzo es válido.
+        return 1.0;
+    }
+
+    // El score baja si hay mucha complejidad lógica pero poca variabilidad motora.
+    let diff = (code_complexity - motor_entropy).abs();
+    
+    // Si la diferencia es pequeña, el acoplamiento es alto.
+    (1.0 - diff).clamp(0.0, 1.0)
+}
+
 /// Calcula un threshold dinámico basado en scores históricos
 pub fn calculate_dynamic_threshold(historical_scores: &[f64], base_threshold: f64) -> f64 {
     if historical_scores.is_empty() {
