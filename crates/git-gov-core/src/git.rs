@@ -36,13 +36,15 @@ pub fn install_hooks(repo: &Repository) -> Result<(), String> {
         std::fs::create_dir_all(&hooks_dir).map_err(|e| e.to_string())?;
     }
 
-    // 1. Hook de preparación de mensaje (para añadir trailers)
+    // 1. Hook de preparación de mensaje (para añadir trailers firmados)
     let prepare_hook_path = hooks_dir.join("prepare-commit-msg");
     let prepare_hook_content = r#"#!/bin/bash
-# git-gov hook: Añade el score al mensaje del commit
-SCORE=$(git-gov metrics --short 2>/dev/null)
-if [ $? -eq 0 ] && [ ! -z "$SCORE" ]; then
-    git interpret-trailers --in-place --trailer "git-gov-score: $SCORE" "$1"
+# git-gov hook: Añade el ticket firmado al mensaje del commit
+TICKET_FILE=".git/git-gov/latest_ticket"
+if [ -f "$TICKET_FILE" ]; then
+    TICKET_DATA=$(cat "$TICKET_FILE")
+    git interpret-trailers --in-place --trailer "git-gov-score: $TICKET_DATA" "$1"
+    rm "$TICKET_FILE"
 fi
 "#;
     std::fs::write(&prepare_hook_path, prepare_hook_content).map_err(|e| e.to_string())?;
@@ -53,13 +55,7 @@ fi
 # git-gov hook: Aduana Termodinámica
 # Bloquea el commit si no hay suficiente energía acumulada.
 
-# Calculamos el costo del diff staged
-DIFF_OUT=$(git diff --cached)
-if [ -z "$DIFF_OUT" ]; then
-    exit 0
-fi
-
-# El CLI se encarga de calcular el costo entrópico real y pedir el ticket
+# El CLI se encarga de calcular el costo, pedir el ticket y GUARDARLO
 git-gov verify-work
 if [ $? -ne 0 ]; then
     echo "--------------------------------------------------------"
@@ -129,6 +125,45 @@ pub fn get_staged_diff(repo: &Repository) -> Result<String, String> {
     }).map_err(|e| e.to_string())?;
 
     Ok(diff_text)
+}
+
+/// Registra una clave pública en el repositorio
+pub fn register_public_key(repo: &git2::Repository, key_hex: &str, alias: &str) -> Result<(), String> {
+    let gov_dir = repo.path().join("git-gov");
+    if !gov_dir.exists() {
+        std::fs::create_dir_all(&gov_dir).map_err(|e| e.to_string())?;
+    }
+    
+    let keys_file = gov_dir.join("trusted_keys");
+    let entry = format!("{}:{}\n", alias, key_hex);
+    
+    use std::io::Write;
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(keys_file)
+        .map_err(|e| e.to_string())?;
+        
+    file.write_all(entry.as_bytes()).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Obtiene el mapa de claves públicas confiables
+pub fn get_trusted_keys(repo: &git2::Repository) -> Result<std::collections::HashMap<String, String>, String> {
+    let keys_file = repo.path().join("git-gov").join("trusted_keys");
+    if !keys_file.exists() {
+        return Ok(std::collections::HashMap::new());
+    }
+    
+    let content = std::fs::read_to_string(keys_file).map_err(|e| e.to_string())?;
+    let mut keys = std::collections::HashMap::new();
+    for line in content.lines() {
+        let parts: Vec<&str> = line.split(':').collect();
+        if parts.len() == 2 {
+            keys.insert(parts[0].to_string(), parts[1].to_string());
+        }
+    }
+    Ok(keys)
 }
 
 #[cfg(test)]

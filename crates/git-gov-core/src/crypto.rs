@@ -1,4 +1,4 @@
-use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
+pub use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
 use rand::rngs::OsRng;
 use sha2::{Digest, Sha256};
 

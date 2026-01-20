@@ -20,6 +20,7 @@ pub struct IpcServer {
     events_captured: Arc<RwLock<usize>>,
     shutdown: CancellationToken,
     start_time: std::time::Instant,
+    signing_key: Arc<git_gov_core::crypto::SigningKey>,
 }
 
 impl IpcServer {
@@ -31,6 +32,16 @@ impl IpcServer {
         events_captured: Arc<RwLock<usize>>,
         shutdown: CancellationToken,
     ) -> Self {
+        let (signing_key, verifying_key) = git_gov_core::crypto::generate_keypair();
+        
+        let pubkey_bytes = verifying_key.as_bytes();
+        let mut pubkey_hex = String::with_capacity(pubkey_bytes.len() * 2);
+        for byte in pubkey_bytes {
+            pubkey_hex.push_str(&format!("{:02x}", byte));
+        }
+        
+        info!("Daemon started with Public Key: {}", pubkey_hex);
+
         Self {
             socket_path,
             metrics,
@@ -39,6 +50,7 @@ impl IpcServer {
             events_captured,
             shutdown,
             start_time: std::time::Instant::now(),
+            signing_key: Arc::new(signing_key),
         }
     }
 
@@ -64,6 +76,7 @@ impl IpcServer {
                             let battery_lock = self.battery_ref.clone();
                             let events_captured_lock = self.events_captured.clone();
                             let start_time = self.start_time;
+                            let signing_key_lock = self.signing_key.clone();
                             
                             tokio::spawn(async move {
                                 let mut buffer = vec![0; 1024];
@@ -112,12 +125,11 @@ impl IpcServer {
                                     Ok(Request::GetTicket { cost }) => {
                                         let mut battery = battery_lock.write().map_err(|_| "Lock failed").unwrap();
                                         if battery.consume(cost) {
-                                            // En un sistema real, usaríamos una llave persistente.
-                                            // Para este PoC, firmamos la validez del costo.
                                             let message = format!("VALID:cost={:.2}:ts={}", cost, start_time.elapsed().as_secs());
+                                            let signature = git_gov_core::crypto::sign_data(&signing_key_lock, message.as_bytes()).ok();
                                             Response::Ticket {
                                                 success: true,
-                                                signature: Some(message.into_bytes()), // Simplificado para el PoC
+                                                signature,
                                                 message: "Ticket issued. Thermodynamic balance verified.".to_string(),
                                             }
                                         } else {
