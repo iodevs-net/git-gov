@@ -143,7 +143,7 @@ async fn main() {
         }
         Commands::Metrics { short } => {
             match query_daemon(git_gov_core::protocol::Request::GetMetrics).await {
-                Ok(git_gov_core::protocol::Response::Metrics { ldlj, entropy, throughput, human_score }) => {
+                Ok(git_gov_core::protocol::Response::Metrics { ldlj, entropy, throughput, human_score, coupling }) => {
                     if short {
                         println!("{:.4}", human_score);
                     } else {
@@ -152,6 +152,7 @@ async fn main() {
                         println!("  Entropy:      {:.4}", entropy);
                         println!("  Throughput:   {:.4}", throughput);
                         println!("  Human Score:  {:.2}%", human_score * 100.0);
+                        println!("  Coupling:     {:.2}% (Cognitive/Motor Alignment)", coupling * 100.0);
                     }
                 }
                 Ok(git_gov_core::protocol::Response::Error(e)) => {
