@@ -63,6 +63,22 @@ git-gov metrics
 
 ---
 
+## 🔒 Seguridad y FAQ
+
+### ¿Cómo evita los "Mouse Jigglers" o Scripts?
+Los bots generan patrones predecibles. Git-Gov utiliza **Distancia de Compresión Normalizada (NCD)** para medir la entropía del movimiento. Si el patrón es mecánico, la batería no carga. Un script tendría que simular la fisiología humana a la perfección, lo cual es casi tan difícil como escribir el código uno mismo.
+
+### ¿Puedo hackear la memoria para darme energía infinita?
+No. El Daemon implementa **Validación de Causalidad**. El sistema cruza el nivel de energía con el conteo de eventos de hardware reales del kernel (`/dev/input`). Si tu energía sube sin movimiento físico reportado por el driver, el sistema detecta una anomalía y bloquea la emisión de tickets.
+
+### ¿Es privado? ¿Me están espiando?
+Totalmente. Git-Gov **no graba coordenadas ni contenido**. Solo procesa deltas de velocidad de forma estadística. Los datos mueren en un buffer circular en RAM cada 5 segundos y nunca se escriben en disco ni se envían a la red.
+
+### ¿Qué pasa si alguien borra el Hook de Git?
+Localmente, un usuario podría intentar evadirlo. Sin embargo, en un entorno profesional, el servidor remoto (Oráculo) rechaza cualquier commit que no incluya el **Trailer Firmado con Ed25519** generado por un Daemon legítimo.
+
+---
+
 ## 📂 Anatomía del Proyecto
 
 - `git-gov-core`: El motor de entropía, termodinámica y validación de hardware.
