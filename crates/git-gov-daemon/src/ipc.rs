@@ -31,8 +31,9 @@ impl IpcServer {
         battery_ref: Arc<RwLock<AttentionBattery>>,
         events_captured: Arc<RwLock<usize>>,
         shutdown: CancellationToken,
+        signing_key: git_gov_core::crypto::SigningKey,
     ) -> Self {
-        let (signing_key, verifying_key) = git_gov_core::crypto::generate_keypair();
+        let verifying_key = signing_key.verifying_key();
         
         let pubkey_bytes = verifying_key.as_bytes();
         let mut pubkey_hex = String::with_capacity(pubkey_bytes.len() * 2);

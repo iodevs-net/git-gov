@@ -56,13 +56,18 @@ async fn main() -> Result<()> {
     let battery_ref = monitor.get_battery_ref();
     let events_captured_ref = monitor.get_events_captured_ref();
     
+    // Load or create persistent identity
+    let signing_key = git_gov_core::crypto::load_or_create_identity()
+        .map_err(|e| anyhow::anyhow!("Failed to initialize identity: {}", e))?;
+
     let ipc_server = IpcServer::new(
         "/tmp/git-gov.sock".to_string(),
         metrics_ref,
         coupling_ref,
         battery_ref,
         events_captured_ref,
-        shutdown.clone()
+        shutdown.clone(),
+        signing_key
     );
 
     // Start IPC server task

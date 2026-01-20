@@ -1,6 +1,11 @@
 pub use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
 use rand::rngs::OsRng;
 use sha2::{Digest, Sha256};
+use std::path::PathBuf;
+use std::fs;
+use std::io::{Read, Write};
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 
 /// Genera un par de claves Ed25519
 pub fn generate_keypair() -> (SigningKey, VerifyingKey) {
@@ -31,6 +36,45 @@ pub fn calculate_sha256(data: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::new();
     hasher.update(data);
     hasher.finalize().to_vec()
+}
+
+/// Carga la identidad del daemon desde ~/.config/git-gov/daemon.key o crea una nueva
+pub fn load_or_create_identity() -> Result<SigningKey, String> {
+    let home = std::env::var("HOME").map_err(|_| "No env var HOME found")?;
+    let config_dir = PathBuf::from(home).join(".config").join("git-gov");
+    let key_path = config_dir.join("daemon.key");
+
+    if !config_dir.exists() {
+        fs::create_dir_all(&config_dir).map_err(|e| format!("Failed to create config dir: {}", e))?;
+    }
+
+    if key_path.exists() {
+        let mut file = fs::File::open(&key_path).map_err(|e| format!("Failed to open key file: {}", e))?;
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes).map_err(|e| format!("Failed to read key file: {}", e))?;
+        
+        if bytes.len() != 32 {
+            return Err("Invalid key file size (expected 32 bytes)".to_string());
+        }
+
+        let key_bytes: [u8; 32] = bytes.try_into().map_err(|_| "Failed to parse key bytes")?;
+        Ok(SigningKey::from_bytes(&key_bytes))
+    } else {
+        let (signing_key, _) = generate_keypair();
+        let bytes = signing_key.to_bytes();
+        
+        let mut file = fs::File::create(&key_path).map_err(|e| format!("Failed to create key file: {}", e))?;
+        
+        #[cfg(unix)]
+        {
+            let mut perms = file.metadata().map_err(|e| e.to_string())?.permissions();
+            perms.set_mode(0o600);
+            file.set_permissions(perms).map_err(|e| e.to_string())?;
+        }
+
+        file.write_all(&bytes).map_err(|e| format!("Failed to write key file: {}", e))?;
+        Ok(signing_key)
+    }
 }
 
 #[cfg(test)]
