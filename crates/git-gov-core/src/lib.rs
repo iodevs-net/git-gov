@@ -2,6 +2,7 @@ pub mod crypto;
 pub mod entropy;
 pub mod git;
 pub mod monitor;
+pub mod mouse_sentinel;
 pub mod stats;
 
 use sha2::{Digest, Sha256};
