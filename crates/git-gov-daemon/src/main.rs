@@ -25,13 +25,13 @@ async fn main() -> Result<()> {
     let config: git_gov_core::monitor::GitMonitorConfig = load_config().await?;
     
     // Initialize monitoring
-    let (mouse_tx, mouse_rx) = mpsc::channel(config.mouse_buffer_size);
+    let (input_tx, input_rx) = mpsc::channel(config.mouse_buffer_size);
     let (file_tx, file_rx) = mpsc::channel(100); // Canal para eventos de archivo
     let shutdown = CancellationToken::new();
 
     // Start hardware capture backend
     if let Some(backend) = get_default_backend() {
-        backend.start(mouse_tx, shutdown.clone())?;
+        backend.start(input_tx, shutdown.clone())?;
         info!("Hardware capture backend started");
     } else {
         warn!("No supported hardware capture backend found for this platform");
@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
 
     let monitor: git_gov_core::monitor::GitMonitor = git_gov_core::monitor::GitMonitor::new(
         config.clone(), 
-        mouse_rx, 
+        input_rx, 
         file_rx,
         watch_root,
         shutdown.clone()

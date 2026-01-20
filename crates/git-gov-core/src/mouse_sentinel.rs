@@ -32,12 +32,10 @@
 use std::collections::VecDeque;
 use thiserror::Error;
 
-#[derive(Debug, Clone, Copy)]
-pub struct MouseEvent {
-    pub x: f64,
-    pub y: f64,
-    /// Timestamp en segundos (monótono, origen externo)
-    pub t: f64,
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub enum InputEvent {
+    Mouse { x: f64, y: f64, t: f64 },
+    Keyboard { t: f64 },
 }
 
 #[derive(Debug, Error)]
@@ -68,7 +66,7 @@ pub struct KinematicMetrics {
 
 #[derive(Debug)]
 pub struct MouseSentinel {
-    pub buffer: VecDeque<MouseEvent>,
+    pub buffer: VecDeque<InputEvent>, // Guardaremos solo los eventos de mouse aquí para análisis cinemático
     pub capacity: usize,
 }
 
@@ -104,11 +102,15 @@ impl MouseSentinel {
     /// let mut sentinel = MouseSentinel::new(10);
     /// sentinel.push(MouseEvent { x: 100.0, y: 200.0, t: 123.0 });
     /// ```
-    pub fn push(&mut self, event: MouseEvent) {
-        if self.buffer.len() == self.capacity {
-            self.buffer.pop_front();
+    pub fn push(&mut self, event: InputEvent) {
+        if let InputEvent::Mouse { .. } = event {
+            if self.buffer.len() == self.capacity {
+                self.buffer.pop_front();
+            }
+            self.buffer.push_back(event);
         }
-        self.buffer.push_back(event);
+        // Los eventos de teclado se manejan a otro nivel (ritmo), 
+        // no entran en el análisis cinemático de trayectorias.
     }
 
     /// Método alternativo para capturar eventos con timestamp automático
@@ -124,7 +126,7 @@ impl MouseSentinel {
     /// sentinel.capture_event(100.0, 200.0);
     /// ```
     pub fn capture_event(&mut self, x: f64, y: f64) {
-        let event = MouseEvent {
+        let event = InputEvent::Mouse {
             x,
             y,
             t: std::time::SystemTime::now()
@@ -166,7 +168,16 @@ impl MouseSentinel {
         let a = accelerations(&v)?;
         let j = jerks(&a)?;
 
-        let duration = self.buffer.back().unwrap().t - self.buffer.front().unwrap().t;
+        let t_start = match self.buffer.front().unwrap() {
+            InputEvent::Mouse { t, .. } => *t,
+            _ => return Err(MouseSentinelError::InsufficientData),
+        };
+        let t_end = match self.buffer.back().unwrap() {
+            InputEvent::Mouse { t, .. } => *t,
+            _ => return Err(MouseSentinelError::InsufficientData),
+        };
+
+        let duration = t_end - t_start;
         if duration <= 0.0 {
             return Err(MouseSentinelError::InvalidTimeline);
         }
@@ -182,7 +193,10 @@ impl MouseSentinel {
         let throughput = path_length(&self.buffer)? / duration;
 
         // Nuevas métricas científicas
-        let timestamps: Vec<f64> = self.buffer.iter().map(|e| e.t).collect();
+        let timestamps: Vec<f64> = self.buffer.iter().filter_map(|e| match e {
+            InputEvent::Mouse { t, .. } => Some(*t),
+            _ => None,
+        }).collect();
         let burstiness = crate::stats::calculate_burstiness(&timestamps);
 
         // Para NCD usamos la serie de velocidades como firma de comportamiento
@@ -207,17 +221,26 @@ impl MouseSentinel {
 /* ---------------- Funciones internas de cálculo ---------------- */
 
 /// Calcula velocidades entre eventos consecutivos
-fn velocities(events: &VecDeque<MouseEvent>) -> Result<Vec<(f64, f64)>, MouseSentinelError> {
+fn velocities(events: &VecDeque<InputEvent>) -> Result<Vec<(f64, f64)>, MouseSentinelError> {
     let mut out = Vec::new();
     for w in events.as_slices().0.windows(2) {
-        let dt = w[1].t - w[0].t;
+        let (t0, x0, y0) = match w[0] {
+            InputEvent::Mouse { t, x, y } => (t, x, y),
+            _ => continue,
+        };
+        let (t1, x1, y1) = match w[1] {
+            InputEvent::Mouse { t, x, y } => (t, x, y),
+            _ => continue,
+        };
+
+        let dt = t1 - t0;
         if dt <= 0.0 {
             return Err(MouseSentinelError::InvalidTimeline);
         }
-        let dx = w[1].x - w[0].x;
-        let dy = w[1].y - w[0].y;
+        let dx = x1 - x0;
+        let dy = y1 - y0;
         let v = (dx * dx + dy * dy).sqrt() / dt;
-        out.push((w[1].t, v));
+        out.push((t1, v));
     }
     Ok(out)
 }
@@ -293,14 +316,18 @@ fn shannon_entropy<I: Iterator<Item = f64>>(values: I) -> Result<f64, MouseSenti
 }
 
 /// Calcula la entropía de curvatura de la trayectoria
-fn curvature_entropy(events: &VecDeque<MouseEvent>) -> Result<f64, MouseSentinelError> {
+fn curvature_entropy(events: &VecDeque<InputEvent>) -> Result<f64, MouseSentinelError> {
     let mut curvatures = Vec::new();
 
     for w in events.as_slices().0.windows(3) {
-        let dx1 = w[1].x - w[0].x;
-        let dy1 = w[1].y - w[0].y;
-        let dx2 = w[2].x - w[1].x;
-        let dy2 = w[2].y - w[1].y;
+        let (x0, y0) = match w[0] { InputEvent::Mouse { x, y, .. } => (x, y), _ => continue };
+        let (x1, y1) = match w[1] { InputEvent::Mouse { x, y, .. } => (x, y), _ => continue };
+        let (x2, y2) = match w[2] { InputEvent::Mouse { x, y, .. } => (x, y), _ => continue };
+
+        let dx1 = x1 - x0;
+        let dy1 = y1 - y0;
+        let dx2 = x2 - x1;
+        let dy2 = y2 - y1;
 
         let cross = dx1 * dy2 - dy1 * dx2;
         let dot1 = dx1 * dx1 + dy1 * dy1;
@@ -316,12 +343,15 @@ fn curvature_entropy(events: &VecDeque<MouseEvent>) -> Result<f64, MouseSentinel
 }
 
 /// Calcula la longitud total de la trayectoria
-fn path_length(events: &VecDeque<MouseEvent>) -> Result<f64, MouseSentinelError> {
+fn path_length(events: &VecDeque<InputEvent>) -> Result<f64, MouseSentinelError> {
     let mut length = 0.0;
 
     for w in events.as_slices().0.windows(2) {
-        let dx = w[1].x - w[0].x;
-        let dy = w[1].y - w[0].y;
+        let (x0, y0) = match w[0] { InputEvent::Mouse { x, y, .. } => (x, y), _ => continue };
+        let (x1, y1) = match w[1] { InputEvent::Mouse { x, y, .. } => (x, y), _ => continue };
+
+        let dx = x1 - x0;
+        let dy = y1 - y0;
         length += (dx * dx + dy * dy).sqrt();
     }
 

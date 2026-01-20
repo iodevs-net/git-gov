@@ -18,7 +18,7 @@ use tokio::sync::{mpsc, watch};
 use tokio_util::sync::CancellationToken;
 use tracing::{info, warn};
 
-use crate::mouse_sentinel::{MouseSentinel, MouseEvent, KinematicMetrics};
+use crate::mouse_sentinel::{MouseSentinel, InputEvent, KinematicMetrics};
 
 // =========================================================================
 // SECTION 1: File Telemetry (FileMonitor)
@@ -463,20 +463,21 @@ impl AttentionBattery {
     }
 
     /// Carga la batería basándose en entropía motora detectada y validación de eventos
-    pub fn charge(&mut self, motor_entropy: f64, duration: Duration, hardware_events: usize) {
+    pub fn charge(&mut self, motor_entropy: f64, duration: Duration, hardware_events: usize, keyboard_hits: usize) {
         self.apply_decay();
         
-        // [CAUSALIDAD] Validamos que han ocurrido eventos reales en este intervalo
+        // [CAUSALIDAD] Validamos que han ocurrido eventos reales
         let events_delta = hardware_events.saturating_sub(self.causal_event_count);
         if events_delta == 0 {
-            return; // No hay actividad real, no hay carga
+            return; 
         }
 
-        // La carga es proporcional a la entropía Y limitada por la densidad de eventos
-        // Un script que inyecta movimiento perfecto tendrá NCD bajo (baja entropía).
-        let charge_amount = (motor_entropy * duration.as_secs_f64() * 5.0).min(events_delta as f64 * 0.1); 
+        // La carga es proporcional a la entropía motora Y al volumen de teclado
+        // El teclado es un indicador de "trabajo duro" (sweat).
+        let mouse_charge = (motor_entropy * duration.as_secs_f64() * 5.0).min(events_delta as f64 * 0.1);
+        let keyboard_charge = (keyboard_hits as f64 * 0.5).min(20.0); // Cap de carga por intervalo de teclado
         
-        self.level = (self.level + charge_amount).min(self.capacity);
+        self.level = (self.level + mouse_charge + keyboard_charge).min(self.capacity);
         self.causal_event_count = hardware_events;
     }
 
@@ -519,20 +520,21 @@ impl Default for GitMonitorConfig {
 pub struct GitMonitor {
     shutdown: CancellationToken,
     mouse_sentinel: MouseSentinel,
-    mouse_rx: mpsc::Receiver<MouseEvent>,
+    input_rx: mpsc::Receiver<InputEvent>,
     file_rx: mpsc::Receiver<EditEvent>,
     analysis_interval: Duration,
     latest_metrics: Arc<RwLock<Option<KinematicMetrics>>>,
     latest_coupling: Arc<RwLock<f64>>,
     battery: Arc<RwLock<AttentionBattery>>,
     events_captured: Arc<RwLock<usize>>,
+    keyboard_hits: Arc<AtomicU64>,
     watch_root: PathBuf,
 }
 
 impl GitMonitor {
     pub fn new(
         config: GitMonitorConfig,
-        mouse_rx: mpsc::Receiver<MouseEvent>,
+        input_rx: mpsc::Receiver<InputEvent>,
         file_rx: mpsc::Receiver<EditEvent>,
         watch_root: PathBuf,
         shutdown: CancellationToken,
@@ -540,13 +542,14 @@ impl GitMonitor {
         Ok(Self {
             shutdown,
             mouse_sentinel: MouseSentinel::new(config.mouse_buffer_size),
-            mouse_rx,
+            input_rx,
             file_rx,
             analysis_interval: config.analysis_interval,
             latest_metrics: Arc::new(RwLock::new(None)),
             latest_coupling: Arc::new(RwLock::new(1.0)),
             battery: Arc::new(RwLock::new(AttentionBattery::new())),
             events_captured: Arc::new(RwLock::new(0)),
+            keyboard_hits: Arc::new(AtomicU64::new(0)),
             watch_root,
         })
     }
@@ -578,8 +581,15 @@ impl GitMonitor {
                     break;
                 }
 
-                Some(event) = self.mouse_rx.recv() => {
-                    self.mouse_sentinel.capture_event(event.x, event.y);
+                Some(event) = self.input_rx.recv() => {
+                    match event {
+                        InputEvent::Mouse { x, y, .. } => {
+                            self.mouse_sentinel.capture_event(x, y);
+                        }
+                        InputEvent::Keyboard { .. } => {
+                            self.keyboard_hits.fetch_add(1, Ordering::SeqCst);
+                        }
+                    }
                     if let Ok(mut count) = self.events_captured.write() {
                         *count += 1;
                     }
@@ -656,7 +666,8 @@ impl GitMonitor {
 
                 // [TERMODINÁMICA] Cargamos la batería con el esfuerzo detectado Y validación causal
                 if let Ok(mut batt) = self.battery.write() {
-                    batt.charge(metrics.velocity_entropy / 8.0, self.analysis_interval, events);
+                    let k_hits = self.keyboard_hits.swap(0, Ordering::SeqCst);
+                    batt.charge(metrics.velocity_entropy / 8.0, self.analysis_interval, events, k_hits as usize);
                 }
 
                 if let Ok(mut latest) = self.latest_metrics.write() {
