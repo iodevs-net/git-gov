@@ -60,6 +60,10 @@ pub struct KinematicMetrics {
     pub curvature_entropy: f64,
     /// Throughput - distancia total recorrida por unidad de tiempo
     pub throughput: f64,
+    /// Burstiness - variabilidad en los intervalos entre eventos
+    pub burstiness: f64,
+    /// NCD - medida de complejidad algorítmica/compresibilidad
+    pub ncd: f64,
 }
 
 #[derive(Debug)]
@@ -177,11 +181,25 @@ impl MouseSentinel {
         let curvature_entropy = curvature_entropy(&self.buffer)?;
         let throughput = path_length(&self.buffer)? / duration;
 
+        // Nuevas métricas científicas
+        let timestamps: Vec<f64> = self.buffer.iter().map(|e| e.t).collect();
+        let burstiness = crate::stats::calculate_burstiness(&timestamps);
+
+        // Para NCD usamos la serie de velocidades como firma de comportamiento
+        let v_bytes: Vec<u8> = v.iter()
+            .flat_map(|(_, vel)| vel.to_le_bytes().to_vec())
+            .collect();
+        // Comparamos con una secuencia monótona del mismo tamaño para medir "sorpresa"
+        let reference = vec![0u8; v_bytes.len()];
+        let ncd = crate::stats::calculate_ncd(&v_bytes, &reference);
+
         Ok(KinematicMetrics {
             ldlj,
             velocity_entropy,
             curvature_entropy,
             throughput,
+            burstiness,
+            ncd,
         })
     }
 }
