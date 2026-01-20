@@ -22,10 +22,29 @@ impl GitMonitor {
         let mut sigint = signal(SignalKind::interrupt())
             .map_err(|e| GitGovError::Io(format!("Failed to setup SIGINT handler: {}", e)))?;
         
+        // Initialize Mouse Sentinel
+        let mouse_sentinel = crate::mouse_sentinel::MouseSentinel::new(2048);
+        
         // Main monitoring loop
         while !self.shutdown {
-            // Perform monitoring tasks (placeholder)
-            info!("Monitoring repositories... (placeholder)");
+            // Perform monitoring tasks
+            info!("Monitoring repositories...");
+            
+            // Simulate mouse event capture (in real implementation, this would come from OS hooks)
+            mouse_sentinel.capture_event(100.0, 200.0);
+            mouse_sentinel.capture_event(105.0, 205.0);
+            mouse_sentinel.capture_event(110.0, 210.0);
+            
+            // Analyze captured events
+            match mouse_sentinel.analyze_events() {
+                Ok(metrics) => {
+                    info!("Mouse Sentinel Metrics - LDLJ: {:.2}, Entropy: {:.2}, Throughput: {:.2}",
+                          metrics.ldlj, metrics.spec_entropy, metrics.throughput);
+                }
+                Err(e) => {
+                    warn!("Mouse Sentinel Analysis Error: {}", e);
+                }
+            }
             
             // Wait for either a signal or a timeout
             tokio::select! {
