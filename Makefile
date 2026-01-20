@@ -27,3 +27,11 @@ daemon:
 
 cli:
 	cargo run -p git-gov-cli -- --help
+
+install:
+	./install.sh
+
+uninstall:
+	sudo rm -f /usr/local/bin/git-gov
+	sudo rm -f /usr/local/bin/git-gov-daemon
+	@echo "Git-Gov desinstalado correctamente de /usr/local/bin"

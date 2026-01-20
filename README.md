@@ -40,6 +40,19 @@ graph LR
 
 ---
 
+## 🚀 Instalación Élite (Linux)
+
+Para una instalación formal y global en tu sistema:
+
+```bash
+git clone https://github.com/iodevs-net/git-gov.git
+cd git-gov
+make install
+```
+*Este comando compila el proyecto y despliega los binarios `git-gov` y `git-gov-daemon` en `/usr/local/bin`.*
+
+---
+
 ## 🚀 Despliegue de la Aduana
 
 ### 1. Iniciar el Centinela

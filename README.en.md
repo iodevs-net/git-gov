@@ -40,6 +40,19 @@ graph LR
 
 ---
 
+## 🚀 Elite Installation (Linux)
+
+For a formal and global installation on your system:
+
+```bash
+git clone https://github.com/iodevs-net/git-gov.git
+cd git-gov
+make install
+```
+*This command compiles the project and deploys the `git-gov` and `git-gov-daemon` binaries to `/usr/local/bin`.*
+
+---
+
 ## 🚀 Deploying the Customs
 
 ### 1. Start the Sentinel
