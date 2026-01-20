@@ -1,3 +1,5 @@
+pub mod backend;
+pub mod protocol;
 pub mod crypto;
 pub mod entropy;
 pub mod git;
