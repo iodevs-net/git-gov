@@ -109,6 +109,28 @@ impl IpcServer {
                                             Response::Error("Failed to lock metrics".to_string())
                                         }
                                     }
+                                    Ok(Request::GetTicket { cost }) => {
+                                        let mut battery = battery_lock.write().map_err(|_| "Lock failed").unwrap();
+                                        if battery.consume(cost) {
+                                            // En un sistema real, usaríamos una llave persistente.
+                                            // Para este PoC, firmamos la validez del costo.
+                                            let message = format!("VALID:cost={:.2}:ts={}", cost, start_time.elapsed().as_secs());
+                                            Response::Ticket {
+                                                success: true,
+                                                signature: Some(message.into_bytes()), // Simplificado para el PoC
+                                                message: "Ticket issued. Thermodynamic balance verified.".to_string(),
+                                            }
+                                        } else {
+                                            Response::Ticket {
+                                                success: false,
+                                                signature: None,
+                                                message: format!(
+                                                    "THERMODYNAMIC FAILURE: Required {:.2}, Battery at {:.2}. Focus more!",
+                                                    cost, battery.level
+                                                ),
+                                            }
+                                        }
+                                    }
                                     Ok(Request::Ping) => Response::Pong,
                                     Err(e) => Response::Error(format!("Invalid request: {}", e)),
                                 };

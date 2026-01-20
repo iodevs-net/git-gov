@@ -36,31 +36,82 @@ pub fn install_hooks(repo: &Repository) -> Result<(), String> {
         std::fs::create_dir_all(&hooks_dir).map_err(|e| e.to_string())?;
     }
 
-    let hook_path = hooks_dir.join("prepare-commit-msg");
-    let hook_content = r#"#!/bin/bash
-# git-gov hook
-# Captura métricas y añade el trailer de score al commit
-
-# Intentar obtener métricas del daemon de git-gov
+    // 1. Hook de preparación de mensaje (para añadir trailers)
+    let prepare_hook_path = hooks_dir.join("prepare-commit-msg");
+    let prepare_hook_content = r#"#!/bin/bash
+# git-gov hook: Añade el score al mensaje del commit
 SCORE=$(git-gov metrics --short 2>/dev/null)
-
 if [ $? -eq 0 ] && [ ! -z "$SCORE" ]; then
-    # Añadir el trailer al mensaje del commit
     git interpret-trailers --in-place --trailer "git-gov-score: $SCORE" "$1"
 fi
 "#;
+    std::fs::write(&prepare_hook_path, prepare_hook_content).map_err(|e| e.to_string())?;
 
-    std::fs::write(&hook_path, hook_content).map_err(|e| e.to_string())?;
+    // 2. Hook de pre-commit (La "Aduana Termodinámica")
+    let pre_hook_path = hooks_dir.join("pre-commit");
+    let pre_hook_content = r#"#!/bin/bash
+# git-gov hook: Aduana Termodinámica
+# Bloquea el commit si no hay suficiente energía acumulada.
+
+# Calculamos el costo del diff staged
+DIFF_OUT=$(git diff --cached)
+if [ -z "$DIFF_OUT" ]; then
+    exit 0
+fi
+
+# El CLI se encarga de calcular el costo entrópico real y pedir el ticket
+git-gov verify-work
+if [ $? -ne 0 ]; then
+    echo "--------------------------------------------------------"
+    echo "❌ ERROR: ADUANA TERMODINÁMICA DE GIT-GOV"
+    echo "Tu reserva de energía kinética es insuficiente para"
+    echo "la complejidad de este código. Dedica más tiempo a la"
+    echo "curaduría manual antes de intentar commitear."
+    echo "--------------------------------------------------------"
+    exit 1
+fi
+"#;
+    std::fs::write(&pre_hook_path, pre_hook_content).map_err(|e| e.to_string())?;
 
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let mut perms = std::fs::metadata(&hook_path).map_err(|e| e.to_string())?.permissions();
-        perms.set_mode(0o755);
-        std::fs::set_permissions(&hook_path, perms).map_err(|e| e.to_string())?;
+        for hook in &["prepare-commit-msg", "pre-commit"] {
+            let path = hooks_dir.join(hook);
+            let mut perms = std::fs::metadata(&path).map_err(|e| e.to_string())?.permissions();
+            perms.set_mode(0o755);
+            std::fs::set_permissions(&path, perms).map_err(|e| e.to_string())?;
+        }
     }
 
     Ok(())
+}
+
+/// Obtiene el diff de los archivos staged
+pub fn get_staged_diff(repo: &Repository) -> Result<String, String> {
+    let mut opts = git2::DiffOptions::new();
+    let head = repo.head().ok();
+    let diff = match head {
+        Some(h) => {
+            let tree = h.peel_to_tree().map_err(|e| e.to_string())?;
+            repo.diff_tree_to_index(Some(&tree), None, Some(&mut opts))
+        }
+        None => {
+            // Repositorio vacío, comparamos contra un árbol vacío
+            repo.diff_tree_to_index(None, None, Some(&mut opts))
+        }
+    }.map_err(|e| e.to_string())?;
+
+    let mut diff_text = String::new();
+    diff.print(git2::DiffFormat::Patch, |_, _, line: git2::DiffLine| {
+        diff_text.push(line.origin());
+        if let Ok(s) = std::str::from_utf8(line.content()) {
+            diff_text.push_str(s);
+        }
+        true
+    }).map_err(|e| e.to_string())?;
+
+    Ok(diff_text)
 }
 
 #[cfg(test)]

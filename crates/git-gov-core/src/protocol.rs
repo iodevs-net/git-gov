@@ -12,6 +12,8 @@ pub enum Request {
     GetStatus,
     /// Solicita las métricas cinemáticas actuales
     GetMetrics,
+    /// Solicita un ticket de atención para pagar un costo entrópico
+    GetTicket { cost: f64 },
     /// Prueba de conexión
     Ping,
 }
@@ -33,6 +35,12 @@ pub enum Response {
         human_score: f64,
         coupling: f64,
         battery_level: f64,
+    },
+    /// Ticket de atención firmado
+    Ticket {
+        success: bool,
+        signature: Option<Vec<u8>>,
+        message: String,
     },
     /// Respuesta a Ping
     Pong,

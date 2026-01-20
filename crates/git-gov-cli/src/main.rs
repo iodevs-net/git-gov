@@ -55,6 +55,8 @@ enum Commands {
         #[arg(short, long, default_value = "text")]
         format: String,
     },
+    /// Verificación termodinámica del trabajo (para hooks)
+    VerifyWork,
 }
 
 #[tokio::main]
@@ -212,6 +214,56 @@ async fn main() {
                 }
                 Err(error) => {
                     eprintln!("❌ Failed to check commit trailer: {}", error);
+                    process::exit(1);
+                }
+            }
+        }
+        Commands::VerifyWork => {
+            use git_gov_core::git::get_staged_diff;
+            use git_gov_core::complexity::estimate_entropic_cost;
+
+            let repo = match open_repository(Path::new(".")) {
+                Ok(repo) => repo,
+                Err(e) => {
+                    eprintln!("❌ Error opening repository: {}", e);
+                    process::exit(1);
+                }
+            };
+
+            let diff = match get_staged_diff(&repo) {
+                Ok(d) => d,
+                Err(e) => {
+                    eprintln!("❌ Error getting staged diff: {}", e);
+                    process::exit(1);
+                }
+            };
+
+            if diff.is_empty() {
+                process::exit(0);
+            }
+
+            let cost = estimate_entropic_cost(&diff);
+            
+            match query_daemon(git_gov_core::protocol::Request::GetTicket { cost }).await {
+                Ok(git_gov_core::protocol::Response::Ticket { success, message, .. }) => {
+                    if success {
+                        println!("✅ Thermodynamic check passed: {}", message);
+                        process::exit(0);
+                    } else {
+                        eprintln!("❌ {}", message);
+                        process::exit(1);
+                    }
+                }
+                Ok(git_gov_core::protocol::Response::Error(e)) => {
+                    eprintln!("❌ Daemon error: {}", e);
+                    process::exit(1);
+                }
+                Err(e) => {
+                    eprintln!("❌ Daemon communication error: {}", e);
+                    process::exit(1);
+                }
+                _ => {
+                    eprintln!("❌ Unexpected response from daemon");
                     process::exit(1);
                 }
             }
