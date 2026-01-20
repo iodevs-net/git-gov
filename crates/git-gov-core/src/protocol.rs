@@ -32,6 +32,7 @@ pub enum Response {
         throughput: f64,
         human_score: f64,
         coupling: f64,
+        battery_level: f64,
     },
     /// Respuesta a Ping
     Pong,

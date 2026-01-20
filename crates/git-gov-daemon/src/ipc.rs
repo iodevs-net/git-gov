@@ -9,12 +9,14 @@ use std::fs;
 
 use git_gov_core::protocol::{Request, Response};
 use git_gov_core::mouse_sentinel::KinematicMetrics;
+use git_gov_core::monitor::AttentionBattery;
 use git_gov_core::stats::calculate_human_score;
 
 pub struct IpcServer {
     socket_path: String,
     metrics: Arc<RwLock<Option<KinematicMetrics>>>,
     coupling_ref: Arc<RwLock<f64>>,
+    battery_ref: Arc<RwLock<AttentionBattery>>,
     events_captured: Arc<RwLock<usize>>,
     shutdown: CancellationToken,
     start_time: std::time::Instant,
@@ -25,6 +27,7 @@ impl IpcServer {
         socket_path: String,
         metrics: Arc<RwLock<Option<KinematicMetrics>>>,
         coupling_ref: Arc<RwLock<f64>>,
+        battery_ref: Arc<RwLock<AttentionBattery>>,
         events_captured: Arc<RwLock<usize>>,
         shutdown: CancellationToken,
     ) -> Self {
@@ -32,6 +35,7 @@ impl IpcServer {
             socket_path,
             metrics,
             coupling_ref,
+            battery_ref,
             events_captured,
             shutdown,
             start_time: std::time::Instant::now(),
@@ -57,6 +61,7 @@ impl IpcServer {
                         Ok((mut stream, _)) => {
                             let metrics_lock = self.metrics.clone();
                             let coupling_lock = self.coupling_ref.clone();
+                            let battery_lock = self.battery_ref.clone();
                             let events_captured_lock = self.events_captured.clone();
                             let start_time = self.start_time;
                             
@@ -87,6 +92,7 @@ impl IpcServer {
                                                 );
                                                 
                                                 let coupling = coupling_lock.read().map(|g| *g).unwrap_or(1.0);
+                                                let battery_level = battery_lock.read().map(|g| g.level).unwrap_or(0.0);
 
                                                 Response::Metrics {
                                                     ldlj: m.ldlj,
@@ -94,6 +100,7 @@ impl IpcServer {
                                                     throughput: m.throughput,
                                                     human_score,
                                                     coupling,
+                                                    battery_level,
                                                 }
                                             } else {
                                                 Response::Error("No metrics available yet".to_string())

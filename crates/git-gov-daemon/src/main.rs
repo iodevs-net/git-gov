@@ -53,12 +53,14 @@ async fn main() -> Result<()> {
     // Pass shared state to IPC server
     let metrics_ref = monitor.get_metrics_ref();
     let coupling_ref = monitor.get_coupling_ref();
+    let battery_ref = monitor.get_battery_ref();
     let events_captured_ref = monitor.get_events_captured_ref();
     
     let ipc_server = IpcServer::new(
         "/tmp/git-gov.sock".to_string(),
         metrics_ref,
         coupling_ref,
+        battery_ref,
         events_captured_ref,
         shutdown.clone()
     );
@@ -71,7 +73,7 @@ async fn main() -> Result<()> {
     });
 
     // Start FileMonitor task
-    let file_shutdown = shutdown.clone();
+    let _file_shutdown = shutdown.clone();
     tokio::spawn(async move {
         let (_shutdown_tx, shutdown_rx) = watch::channel(git_gov_core::monitor::Shutdown::Run);
         if let Err(e) = file_monitor.run(file_tx, shutdown_rx).await {

@@ -16,7 +16,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 use tokio::sync::{mpsc, watch};
 use tokio_util::sync::CancellationToken;
-use tracing::{info, warn, error};
+use tracing::{info, warn};
 
 use crate::mouse_sentinel::{MouseSentinel, MouseEvent, KinematicMetrics};
 
@@ -437,6 +437,70 @@ pub enum MonitorError {
 // SECTION 2: Mouse Telemetry (GitMonitor)
 // =========================================================================
 
+/// Batería de Atención (Batería Kinética)
+/// 
+/// Acumula "energía" basada en la complejidad del movimiento humano y
+/// la pierde con el tiempo (leaky bucket). Representa el esfuerzo cognitivo
+/// disponible para validar código.
+#[derive(Debug, Clone)]
+pub struct AttentionBattery {
+    pub level: f64,
+    pub capacity: f64,
+    pub last_decay: SystemTime,
+    pub leak_rate: f64,
+    pub causal_event_count: usize, // Conteo de eventos reales procesados
+}
+
+impl AttentionBattery {
+    pub fn new() -> Self {
+        Self {
+            level: 0.0,
+            capacity: 100.0,
+            last_decay: SystemTime::now(),
+            leak_rate: 0.5,
+            causal_event_count: 0,
+        }
+    }
+
+    /// Carga la batería basándose en entropía motora detectada y validación de eventos
+    pub fn charge(&mut self, motor_entropy: f64, duration: Duration, hardware_events: usize) {
+        self.apply_decay();
+        
+        // [CAUSALIDAD] Validamos que han ocurrido eventos reales en este intervalo
+        let events_delta = hardware_events.saturating_sub(self.causal_event_count);
+        if events_delta == 0 {
+            return; // No hay actividad real, no hay carga
+        }
+
+        // La carga es proporcional a la entropía Y limitada por la densidad de eventos
+        // Un script que inyecta movimiento perfecto tendrá NCD bajo (baja entropía).
+        let charge_amount = (motor_entropy * duration.as_secs_f64() * 5.0).min(events_delta as f64 * 0.1); 
+        
+        self.level = (self.level + charge_amount).min(self.capacity);
+        self.causal_event_count = hardware_events;
+    }
+
+    /// Consume energía (Costo Entrópico)
+    pub fn consume(&mut self, cost: f64) -> bool {
+        self.apply_decay();
+        if self.level >= cost {
+            self.level -= cost;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn apply_decay(&mut self) {
+        let now = SystemTime::now();
+        if let Ok(elapsed) = now.duration_since(self.last_decay) {
+            let decay = elapsed.as_secs_f64() * self.leak_rate;
+            self.level = (self.level - decay).max(0.0);
+            self.last_decay = now;
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct GitMonitorConfig {
     pub analysis_interval: Duration,
@@ -460,6 +524,7 @@ pub struct GitMonitor {
     analysis_interval: Duration,
     latest_metrics: Arc<RwLock<Option<KinematicMetrics>>>,
     latest_coupling: Arc<RwLock<f64>>,
+    battery: Arc<RwLock<AttentionBattery>>,
     events_captured: Arc<RwLock<usize>>,
     watch_root: PathBuf,
 }
@@ -480,6 +545,7 @@ impl GitMonitor {
             analysis_interval: config.analysis_interval,
             latest_metrics: Arc::new(RwLock::new(None)),
             latest_coupling: Arc::new(RwLock::new(1.0)),
+            battery: Arc::new(RwLock::new(AttentionBattery::new())),
             events_captured: Arc::new(RwLock::new(0)),
             watch_root,
         })
@@ -487,6 +553,10 @@ impl GitMonitor {
 
     pub fn get_metrics_ref(&self) -> Arc<RwLock<Option<KinematicMetrics>>> {
         self.latest_metrics.clone()
+    }
+
+    pub fn get_battery_ref(&self) -> Arc<RwLock<AttentionBattery>> {
+        self.battery.clone()
     }
 
     pub fn get_coupling_ref(&self) -> Arc<RwLock<f64>> {
@@ -538,10 +608,10 @@ impl GitMonitor {
         
         // [LEAN] Solo leemos archivos pequeños o fragmentos para evitar lag de IO
         if let Ok(content) = tokio::fs::read_to_string(&full_path).await {
-            use crate::complexity::estimate_code_complexity;
+            use crate::complexity::estimate_entropic_cost;
             use crate::stats::calculate_coupling_score;
 
-            let code_complexity = estimate_code_complexity(&content);
+            let entropic_cost = estimate_entropic_cost(&content);
             
             // Obtenemos la entropía motora actual (usamos velocity_entropy como proxy)
             let motor_entropy = self.latest_metrics.read()
@@ -549,24 +619,46 @@ impl GitMonitor {
                 .and_then(|m| m.as_ref().map(|metrics| (metrics.velocity_entropy / 8.0).min(1.0)))
                 .unwrap_or(0.0);
 
-            let coupling = calculate_coupling_score(code_complexity, motor_entropy);
+            // [TERMODINÁMICA] Intentamos pagar el costo con la batería
+            let has_energy = if let Ok(mut batt) = self.battery.write() {
+                batt.consume(entropic_cost)
+            } else {
+                false
+            };
+
+            let coupling = calculate_coupling_score(entropic_cost / 100.0, motor_entropy);
             
             if let Ok(mut latest) = self.latest_coupling.write() {
                 *latest = (*latest * 0.7) + (coupling * 0.3); // Suavizado exponencial
             }
 
-            info!(
-                "File change: {:?} | Complexity: {:.2} | Coupling: {:.2}",
-                event.rel_path.file_name().unwrap_or_default(),
-                code_complexity,
-                coupling
-            );
+            if has_energy {
+                info!(
+                    "File change validated (Energy Balance): {:?} | Cost: {:.2} | Coupling: {:.2}",
+                    event.rel_path.file_name().unwrap_or_default(),
+                    entropic_cost,
+                    coupling
+                );
+            } else {
+                warn!(
+                    "THERMODYNAMIC ANOMALY: Code injected without enough energy! {:?} | Cost: {:.2} | Battery: LOW",
+                    event.rel_path.file_name().unwrap_or_default(),
+                    entropic_cost
+                );
+            }
         }
     }
 
     fn run_analysis(&mut self) {
         match self.mouse_sentinel.analyze() {
             Ok(metrics) => {
+                let events = self.events_captured.read().ok().map(|g| *g).unwrap_or(0);
+
+                // [TERMODINÁMICA] Cargamos la batería con el esfuerzo detectado Y validación causal
+                if let Ok(mut batt) = self.battery.write() {
+                    batt.charge(metrics.velocity_entropy / 8.0, self.analysis_interval, events);
+                }
+
                 if let Ok(mut latest) = self.latest_metrics.write() {
                     *latest = Some(metrics);
                 }

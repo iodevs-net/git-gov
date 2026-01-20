@@ -143,16 +143,18 @@ async fn main() {
         }
         Commands::Metrics { short } => {
             match query_daemon(git_gov_core::protocol::Request::GetMetrics).await {
-                Ok(git_gov_core::protocol::Response::Metrics { ldlj, entropy, throughput, human_score, coupling }) => {
+                Ok(git_gov_core::protocol::Response::Metrics { ldlj, entropy, throughput, human_score, coupling, battery_level }) => {
                     if short {
                         println!("{:.4}", human_score);
                     } else {
-                        println!("Kinematic Metrics (Real-time):");
-                        println!("  LDLJ:         {:.4}", ldlj);
-                        println!("  Entropy:      {:.4}", entropy);
-                        println!("  Throughput:   {:.4}", throughput);
-                        println!("  Human Score:  {:.2}%", human_score * 100.0);
-                        println!("  Coupling:     {:.2}% (Cognitive/Motor Alignment)", coupling * 100.0);
+                        println!("GovMonitor - Estado Termodinámico:");
+                        println!("  🔋 Energía Kinética: {:.1}%", battery_level);
+                        println!("  🧠 Acoplamiento:     {:.1}%", coupling * 100.0);
+                        println!("  --------------------------------");
+                        println!("  LDLJ (Fluidez):      {:.4}", ldlj);
+                        println!("  Entropía Motora:     {:.4}", entropy);
+                        println!("  Throughput:          {:.4}", throughput);
+                        println!("  Human Score:         {:.2}%", human_score * 100.0);
                     }
                 }
                 Ok(git_gov_core::protocol::Response::Error(e)) => {
