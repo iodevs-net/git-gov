@@ -669,6 +669,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
+ "config",
  "ed25519-dalek",
  "evdev",
  "git2",

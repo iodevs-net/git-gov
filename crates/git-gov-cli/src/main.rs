@@ -76,6 +76,19 @@ enum Commands {
     },
     /// Verificación termodinámica del trabajo (para hooks)
     VerifyWork,
+    /// Gestión de configuración
+    Config {
+        #[command(subcommand)]
+        action: ConfigAction,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum ConfigAction {
+    /// Crea un archivo de configuración por defecto
+    Init,
+    /// Valida la configuración actual
+    Check,
 }
 
 #[tokio::main]
@@ -406,6 +419,52 @@ async fn main() {
                 _ => {
                     eprintln!("❌ Unexpected response from daemon");
                     process::exit(1);
+                }
+            }
+        }
+        Commands::Config { action } => {
+            match action {
+                ConfigAction::Init => {
+                    let config_content = r#"# Git-Gov Configuration
+
+[governance]
+# Dificultad de la "Prueba de Sudor" (Easy, Normal, Hardcore)
+difficulty = "Normal"
+# Entropía mínima para validar un commit (base 2.5)
+min_entropy = 2.5
+
+[monitoring]
+# Ventana de agrupación de eventos (ms)
+debounce_window_ms = 500
+# Directorios a ignorar (además de .git)
+ignore_top_level_dirs = [".git", "target", "node_modules", "dist", "build"]
+# Extensiones de archivo a ignorar
+ignore_extensions = ["log", "lock", "tmp", "bak"]
+"#;
+                    let path = Path::new("git-gov.toml");
+                    if path.exists() {
+                        eprintln!("⚠️ git-gov.toml already exists!");
+                        process::exit(1);
+                    }
+                    if let Err(e) = std::fs::write(path, config_content) {
+                        eprintln!("❌ Failed to create config file: {}", e);
+                        process::exit(1);
+                    }
+                    println!("✅ Created git-gov.toml");
+                }
+                ConfigAction::Check => {
+                    match git_gov_core::config::GovConfig::load() {
+                        Ok(cfg) => {
+                            println!("✅ Configuration valid:");
+                            println!("   Difficulty:  {}", cfg.governance.difficulty);
+                            println!("   Min Entropy: {}", cfg.governance.min_entropy);
+                            println!("   Watch Root:  {}", cfg.monitoring.watch_root);
+                        }
+                        Err(e) => {
+                            eprintln!("❌ Configuration invalid: {}", e);
+                            process::exit(1);
+                        }
+                    }
                 }
             }
         }

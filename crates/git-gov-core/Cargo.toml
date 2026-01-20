@@ -28,6 +28,7 @@ tokio = { version = "1.40", features = ["full"] }
 tracing = "0.1"
 tokio-util = { version = "0.7.18", features = ["full"] }
 evdev = { version = "0.13.2", features = ["tokio"] }
+config = "0.13"
 
 [dev-dependencies]
 # Testing frameworks

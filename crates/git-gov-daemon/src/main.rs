@@ -22,11 +22,21 @@ async fn main() -> Result<()> {
     info!("Starting git-gov daemon");
 
     // Load configuration
-    let config: git_gov_core::monitor::GitMonitorConfig = load_config().await?;
+    let gov_config = git_gov_core::config::GovConfig::load()
+        .map_err(|e| anyhow::anyhow!("Failed to load configuration: {}", e))?;
     
+    info!("Loaded configuration: Difficulty={}, Entropy={}", 
+        gov_config.governance.difficulty, 
+        gov_config.governance.min_entropy
+    );
+
     // Initialize monitoring
-    let (input_tx, input_rx) = mpsc::channel(config.mouse_buffer_size);
-    let (file_tx, file_rx) = mpsc::channel(100); // Canal para eventos de archivo
+    let mut monitor_config = git_gov_core::monitor::GitMonitorConfig::default();
+    monitor_config.analysis_interval = std::time::Duration::from_millis(gov_config.monitoring.debounce_window_ms); // Reuse debounce for analysis interval simplification or config
+    monitor_config.min_entropy = gov_config.governance.min_entropy;
+
+    let (input_tx, input_rx) = mpsc::channel(monitor_config.mouse_buffer_size);
+    let (file_tx, file_rx) = mpsc::channel(100); 
     let shutdown = CancellationToken::new();
 
     // Start hardware capture backend
@@ -38,15 +48,15 @@ async fn main() -> Result<()> {
     }
 
     // Configuración del FileMonitor (Gobernanza de archivos)
-    let watch_root = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
-    let file_cfg = git_gov_core::monitor::MonitorConfig::new(watch_root.clone());
+    // Convertir de DTO a configuración interna
+    let file_cfg: git_gov_core::monitor::MonitorConfig = gov_config.monitoring.into();
     let file_monitor = git_gov_core::monitor::FileMonitor::new(file_cfg)?;
 
     let monitor: git_gov_core::monitor::GitMonitor = git_gov_core::monitor::GitMonitor::new(
-        config.clone(), 
+        monitor_config, 
         input_rx, 
         file_rx,
-        watch_root,
+        std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")), // watch_root
         shutdown.clone()
     )?;
     
@@ -90,9 +100,4 @@ async fn main() -> Result<()> {
     monitor.start().await?;
 
     Ok(())
-}
-
-async fn load_config() -> Result<git_gov_core::monitor::GitMonitorConfig> {
-    // Implementation pending
-    Ok(git_gov_core::monitor::GitMonitorConfig::default())
 }

@@ -506,6 +506,7 @@ impl AttentionBattery {
 pub struct GitMonitorConfig {
     pub analysis_interval: Duration,
     pub mouse_buffer_size: usize,
+    pub min_entropy: f64,
 }
 
 impl Default for GitMonitorConfig {
@@ -513,6 +514,7 @@ impl Default for GitMonitorConfig {
         Self {
             analysis_interval: Duration::from_secs(5),
             mouse_buffer_size: 1024,
+            min_entropy: 2.5,
         }
     }
 }
@@ -529,6 +531,7 @@ pub struct GitMonitor {
     events_captured: Arc<RwLock<usize>>,
     keyboard_hits: Arc<AtomicU64>,
     watch_root: PathBuf,
+    min_entropy: f64,
 }
 
 impl GitMonitor {
@@ -551,6 +554,7 @@ impl GitMonitor {
             events_captured: Arc::new(RwLock::new(0)),
             keyboard_hits: Arc::new(AtomicU64::new(0)),
             watch_root,
+            min_entropy: config.min_entropy,
         })
     }
 
