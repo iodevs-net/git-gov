@@ -1,33 +1,28 @@
 // crates/git-gov-core/src/monitor.rs
-//! Observation layer: file edit telemetry (streaming, bounded, auditable).
+//! Observation layer: file edit telemetry and mouse kinematics.
 //!
-//! DOES:
-//! - Watches a directory recursively (repo working tree).
-//! - Emits EditEvent (rel path + kind + timestamp_us) to a bounded channel.
-//! - Applies per-path debounce in an async pipeline (no locks in watcher callback).
-//! - Supports explicit shutdown semantics (Immediate vs Graceful).
-//!
-//! DOES NOT:
-//! - Compute burstiness/NCD (stats.rs).
-//! - Sign/PoW (crypto.rs).
-//! - Inject git trailers/hooks (git.rs).
-//!
-//! Timestamp semantics:
-//! - timestamp_us is "post-filter receipt time" taken immediately before enqueueing RawEvent.
-//! - This is not filesystem write-time. It is "our earliest trustworthy timepoint" per emitted path.
+//! This module integrates two types of monitoring:
+//! 1. **FileMonitor**: Watches the filesystem for code edits.
+//! 2. **GitMonitor**: Captures mouse movements for kinematic analysis.
 
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::collections::{HashMap, HashSet};
 use std::path::{Component, Path, PathBuf};
 use std::sync::{
     atomic::{AtomicBool, AtomicU64, Ordering},
-    Arc,
+    Arc, RwLock,
 };
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use thiserror::Error;
 use tokio::sync::{mpsc, watch};
+use tokio_util::sync::CancellationToken;
+use tracing::{info, warn, error};
 
-// ---------------------------- Domain events ----------------------------
+use crate::mouse_sentinel::{MouseSentinel, MouseEvent, KinematicMetrics};
+
+// =========================================================================
+// SECTION 1: File Telemetry (FileMonitor)
+// =========================================================================
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EditKind {
@@ -44,7 +39,6 @@ pub struct EditEvent {
     pub kind: EditKind,
 }
 
-// Internal callback->pipeline record (minimal owned payload).
 #[derive(Debug, Clone)]
 struct RawEvent {
     rel_path: PathBuf,
@@ -60,8 +54,6 @@ fn now_us() -> Option<u128> {
         .map(|d| d.as_micros())
 }
 
-// ---------------------------- Shutdown semantics ----------------------------
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Shutdown {
     /// Keep running.
@@ -72,15 +64,11 @@ pub enum Shutdown {
     Graceful,
 }
 
-// ---------------------------- Overflow policy ----------------------------
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OverflowPolicy {
     /// Drop the newest event when the channel is full.
     DropNewest,
 }
-
-// ---------------------------- Stats (no printing, auditable) ----------------------------
 
 #[derive(Debug, Default, Clone)]
 pub struct MonitorStatsSnapshot {
@@ -112,34 +100,16 @@ impl MonitorStats {
     }
 }
 
-// ---------------------------- Config ----------------------------
-
 #[derive(Debug, Clone)]
 pub struct MonitorConfig {
     pub watch_root: PathBuf,
-
-    /// Debounce window per path (Create/Modify only; Delete is never suppressed).
     pub debounce_window: Duration,
-
-    /// Capacity for callback->pipeline queue (bounds memory under storms).
     pub raw_queue_capacity: usize,
-
-    /// Exact match on first path component (top-level dir).
     pub ignore_top_level_dirs: HashSet<String>,
-
-    /// Exact match on extension (without dot).
     pub ignore_extensions: HashSet<String>,
-
-    /// Overflow policy for raw queue.
     pub raw_overflow: OverflowPolicy,
-
-    /// Overflow policy for output channel.
     pub out_overflow: OverflowPolicy,
-
-    /// If Shutdown::Graceful: maximum drain duration.
     pub graceful_drain_max: Duration,
-
-    /// If Shutdown::Graceful: maximum number of raw events to drain.
     pub graceful_drain_max_events: usize,
 }
 
@@ -167,14 +137,9 @@ impl MonitorConfig {
     }
 }
 
-// ---------------------------- Debouncer ----------------------------
-
-#[derive(Debug)]
 struct Debouncer {
     window_us: u128,
-    // per-path last emit time for Create/Modify
     last_emit_us: HashMap<PathBuf, u128>,
-    // opportunistic GC (bounds map growth)
     seen: u64,
     gc_every: u64,
 }
@@ -189,9 +154,6 @@ impl Debouncer {
         }
     }
 
-    /// Policy:
-    /// - Delete is never suppressed (terminal event should pass).
-    /// - Create/Modify suppressed per-path within debounce_window.
     fn should_emit(&mut self, path: &Path, kind: EditKind, ts_us: u128) -> bool {
         if kind == EditKind::Delete {
             return true;
@@ -217,8 +179,6 @@ impl Debouncer {
     }
 }
 
-// ---------------------------- Monitor ----------------------------
-
 pub struct FileMonitor {
     cfg: MonitorConfig,
 }
@@ -231,29 +191,18 @@ impl FileMonitor {
         Ok(Self { cfg })
     }
 
-    /// Runs until shutdown != Shutdown::Run or until out_tx is closed.
-    ///
-    /// On Shutdown::Immediate:
-    /// - exits promptly; pending raw events may be dropped.
-    ///
-    /// On Shutdown::Graceful:
-    /// - drains up to (graceful_drain_max, graceful_drain_max_events) from raw queue,
-    ///   applying debounce, then exits.
     pub async fn run(
         self,
         out_tx: mpsc::Sender<EditEvent>,
         mut shutdown: watch::Receiver<Shutdown>,
     ) -> Result<MonitorStatsSnapshot, MonitorError> {
         let watch_root = self.cfg.watch_root.clone();
-        let ignore_top = Arc::new(self.cfg.ignore_top_level_dirs);
-        let ignore_ext = Arc::new(self.cfg.ignore_extensions);
+        let ignore_top = Arc::new(self.cfg.ignore_top_level_dirs.clone());
+        let ignore_ext = Arc::new(self.cfg.ignore_extensions.clone());
 
         let stats = Arc::new(MonitorStats::default());
-
-        // bounded raw queue
         let (raw_tx, mut raw_rx) = mpsc::channel::<RawEvent>(self.cfg.raw_queue_capacity);
 
-        // callback stop flag (thread-visible)
         let stop = Arc::new(AtomicBool::new(false));
         let stop_cb = Arc::clone(&stop);
 
@@ -287,17 +236,15 @@ impl FileMonitor {
                         Err(_) => continue,
                     };
 
-                    // normalize for filtering + emission (no filesystem canonicalize; no IO)
                     let rel_norm = normalize_rel(rel);
 
                     if should_ignore(&rel_norm, &ignore_top_cb, &ignore_ext_cb) {
                         continue;
                     }
 
-                    // timestamp per path, taken right before enqueue => "post-filter receipt time"
                     let ts = match now_us() {
                         Some(v) => v,
-                        None => return, // clock anomaly: drop instead of injecting 0
+                        None => return,
                     };
 
                     let raw = RawEvent {
@@ -309,7 +256,6 @@ impl FileMonitor {
                     match raw_tx.try_send(raw) {
                         Ok(_) => {}
                         Err(_) => {
-                            // DropNewest
                             stats_cb.raw_dropped_overflow.fetch_add(1, Ordering::Relaxed);
                         }
                     }
@@ -323,14 +269,12 @@ impl FileMonitor {
 
         let mut debouncer = Debouncer::new(self.cfg.debounce_window);
 
-        // fast-path: already shutting down
         if *shutdown.borrow() != Shutdown::Run {
             stop.store(true, Ordering::Release);
             drop(watcher);
             return Ok(stats.snapshot());
         }
 
-        // Main pipeline loop
         loop {
             tokio::select! {
                 _ = shutdown.changed() => {
@@ -364,14 +308,12 @@ impl FileMonitor {
                     };
 
                     if try_emit(&out_tx, ev, self.cfg.out_overflow, &stats).is_err() {
-                        // consumer gone => stop
                         break;
                     }
                 }
             }
         }
 
-        // Stop callback + release watcher
         stop.store(true, Ordering::Release);
         drop(watcher);
 
@@ -389,7 +331,6 @@ impl FileMonitor {
         let mut drained = 0usize;
 
         while drained < self.cfg.graceful_drain_max_events {
-            // time bound
             if start.elapsed().unwrap_or_default() > self.cfg.graceful_drain_max {
                 break;
             }
@@ -397,19 +338,15 @@ impl FileMonitor {
             match raw_rx.try_recv() {
                 Ok(raw) => {
                     drained += 1;
-
                     if !debouncer.should_emit(&raw.rel_path, raw.kind, raw.timestamp_us) {
                         stats.debounced.fetch_add(1, Ordering::Relaxed);
                         continue;
                     }
-
                     let ev = EditEvent {
                         rel_path: raw.rel_path,
                         timestamp_us: raw.timestamp_us,
                         kind: raw.kind,
                     };
-
-                    // graceful drain still respects bounded out channel & explicit loss
                     if try_emit(out_tx, ev, self.cfg.out_overflow, stats).is_err() {
                         break;
                     }
@@ -419,8 +356,6 @@ impl FileMonitor {
         }
     }
 }
-
-// ---------------------------- Emission ----------------------------
 
 #[inline]
 fn try_emit(
@@ -444,8 +379,6 @@ fn try_emit(
     }
 }
 
-// ---------------------------- Helpers ----------------------------
-
 #[inline]
 fn map_kind(kind: &EventKind) -> Option<EditKind> {
     match kind {
@@ -456,10 +389,8 @@ fn map_kind(kind: &EventKind) -> Option<EditKind> {
     }
 }
 
-/// Normalizes `.` and `..` components *lexically* (no FS canonicalize, no symlink resolution).
 fn normalize_rel(p: &Path) -> PathBuf {
     let mut out: Vec<std::ffi::OsString> = Vec::new();
-
     for c in p.components() {
         match c {
             Component::CurDir => {}
@@ -467,11 +398,9 @@ fn normalize_rel(p: &Path) -> PathBuf {
                 out.pop();
             }
             Component::Normal(s) => out.push(s.to_os_string()),
-            // For relative paths we shouldn't get RootDir/Prefix, but if it happens, drop it.
             _ => {}
         }
     }
-
     out.into_iter().collect()
 }
 
@@ -485,31 +414,135 @@ fn should_ignore(rel: &Path, ignore_top: &HashSet<String>, ignore_ext: &HashSet<
             }
         }
     }
-
     if let Some(ext) = rel.extension().and_then(|e| e.to_str()) {
         if ignore_ext.contains(ext) {
             return true;
         }
     }
-
     false
 }
-
-// ---------------------------- Errors ----------------------------
 
 #[derive(Debug, Error)]
 pub enum MonitorError {
     #[error("Invalid watch root: {0}")]
     InvalidWatchRoot(PathBuf),
-
     #[error("Failed to create watcher: {0}")]
     WatcherCreation(#[source] notify::Error),
-
     #[error("Failed to start watching: {0}")]
     WatchStart(#[source] notify::Error),
 }
 
-// ---------------------------- Tests ----------------------------
+// =========================================================================
+// SECTION 2: Mouse Telemetry (GitMonitor)
+// =========================================================================
+
+#[derive(Debug, Clone)]
+pub struct GitMonitorConfig {
+    pub analysis_interval: Duration,
+    pub mouse_buffer_size: usize,
+}
+
+impl Default for GitMonitorConfig {
+    fn default() -> Self {
+        Self {
+            analysis_interval: Duration::from_secs(5),
+            mouse_buffer_size: 1024,
+        }
+    }
+}
+
+pub struct GitMonitor {
+    shutdown: CancellationToken,
+    mouse_sentinel: MouseSentinel,
+    mouse_rx: mpsc::Receiver<MouseEvent>,
+    analysis_interval: Duration,
+    latest_metrics: Arc<RwLock<Option<KinematicMetrics>>>,
+    events_captured: Arc<RwLock<usize>>,
+}
+
+impl GitMonitor {
+    pub fn new(
+        config: GitMonitorConfig,
+        mouse_rx: mpsc::Receiver<MouseEvent>,
+        shutdown: CancellationToken,
+    ) -> Result<Self, GitMonitorError> {
+        Ok(Self {
+            shutdown,
+            mouse_sentinel: MouseSentinel::new(config.mouse_buffer_size),
+            mouse_rx,
+            analysis_interval: config.analysis_interval,
+            latest_metrics: Arc::new(RwLock::new(None)),
+            events_captured: Arc::new(RwLock::new(0)),
+        })
+    }
+
+    pub fn get_metrics_ref(&self) -> Arc<RwLock<Option<KinematicMetrics>>> {
+        self.latest_metrics.clone()
+    }
+
+    pub fn get_events_captured_ref(&self) -> Arc<RwLock<usize>> {
+        self.events_captured.clone()
+    }
+
+    pub async fn start(mut self) -> Result<(), GitMonitorError> {
+        info!("GitMonitor started");
+        let mut interval = tokio::time::interval(self.analysis_interval);
+
+        loop {
+            tokio::select! {
+                _ = self.shutdown.cancelled() => {
+                    info!("Shutdown signal received");
+                    break;
+                }
+
+                Some(event) = self.mouse_rx.recv() => {
+                    self.mouse_sentinel.capture_event(event.x, event.y);
+                    if let Ok(mut count) = self.events_captured.write() {
+                        *count += 1;
+                    }
+                }
+
+                _ = interval.tick() => {
+                    self.run_analysis();
+                }
+            }
+        }
+
+        info!("GitMonitor stopped cleanly");
+        Ok(())
+    }
+
+    fn run_analysis(&mut self) {
+        match self.mouse_sentinel.analyze() {
+            Ok(metrics) => {
+                info!(
+                    "Mouse metrics | LDLJ: {:.2} | Entropy: {:.2} | Throughput: {:.2}",
+                    metrics.ldlj,
+                    metrics.velocity_entropy,
+                    metrics.throughput
+                );
+                if let Ok(mut latest) = self.latest_metrics.write() {
+                    *latest = Some(metrics);
+                }
+            }
+            Err(e) => {
+                warn!("Mouse analysis failed: {}", e);
+            }
+        }
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum GitMonitorError {
+    #[error("IO error")]
+    Io(#[from] std::io::Error),
+    #[error("Monitor error: {0}")]
+    Monitor(String),
+}
+
+// =========================================================================
+// SECTION 3: Tests
+// =========================================================================
 
 #[cfg(test)]
 mod tests {
@@ -539,12 +572,8 @@ mod tests {
     fn debounce_never_suppresses_delete() {
         let mut d = Debouncer::new(Duration::from_millis(100));
         let p = Path::new("src/main.rs");
-
-        // create emits
         assert!(d.should_emit(p, EditKind::Create, 1_000_000));
-        // modify within window suppressed
         assert!(!d.should_emit(p, EditKind::Modify, 1_000_050));
-        // delete within window must pass
         assert!(d.should_emit(p, EditKind::Delete, 1_000_060));
     }
 }
