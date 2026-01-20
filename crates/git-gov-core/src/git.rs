@@ -29,6 +29,40 @@ pub fn has_trailer(commit: &git2::Commit, key: &str) -> Result<bool, String> {
     Ok(message.lines().any(|line| line.starts_with(&format!("{}:", key))))
 }
 
+/// Instala los hooks de git-gov en el repositorio
+pub fn install_hooks(repo: &Repository) -> Result<(), String> {
+    let hooks_dir = repo.path().join("hooks");
+    if !hooks_dir.exists() {
+        std::fs::create_dir_all(&hooks_dir).map_err(|e| e.to_string())?;
+    }
+
+    let hook_path = hooks_dir.join("prepare-commit-msg");
+    let hook_content = r#"#!/bin/bash
+# git-gov hook
+# Captura métricas y añade el trailer de score al commit
+
+# Intentar obtener métricas del daemon de git-gov
+SCORE=$(git-gov metrics --short 2>/dev/null)
+
+if [ $? -eq 0 ] && [ ! -z "$SCORE" ]; then
+    # Añadir el trailer al mensaje del commit
+    git interpret-trailers --in-place --trailer "git-gov-score: $SCORE" "$1"
+fi
+"#;
+
+    std::fs::write(&hook_path, hook_content).map_err(|e| e.to_string())?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(&hook_path).map_err(|e| e.to_string())?.permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&hook_path, perms).map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

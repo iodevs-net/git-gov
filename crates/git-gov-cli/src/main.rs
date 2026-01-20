@@ -38,6 +38,14 @@ enum Commands {
         #[arg(short, long)]
         daemon: bool,
     },
+    /// Check daemon status
+    Status,
+    /// View real-time kinematic metrics
+    Metrics {
+        /// Output only the human score (short format)
+        #[arg(short, long)]
+        short: bool,
+    },
     /// Verify commit integrity
     Verify {
         /// Commit hash or reference
@@ -89,6 +97,13 @@ async fn main() {
                     
                     // Add git-gov configuration to git config
                     // This would typically include the public key and other settings
+                    
+                    // Install hooks
+                    match git_gov_core::git::install_hooks(&_repo) {
+                        Ok(_) => println!("✅ Git hooks installed successfully"),
+                        Err(e) => eprintln!("⚠️ Failed to install git hooks: {}", e),
+                    }
+                    
                     println!("✅ Repository initialized successfully");
                     println!("Public key stored: {}", pubkey_hex);
                 }
@@ -106,6 +121,52 @@ async fn main() {
             }
             // Implementation would start the daemon process
             println!("✅ Daemon started successfully");
+        }
+        Commands::Status => {
+            match query_daemon(git_gov_core::protocol::Request::GetStatus).await {
+                Ok(git_gov_core::protocol::Response::Status { is_running, uptime_secs, events_captured }) => {
+                    println!("Daemon Status:");
+                    println!("  Running: {}", if is_running { "✅ Yes" } else { "❌ No" });
+                    println!("  Uptime:  {}s", uptime_secs);
+                    println!("  Events:  {}", events_captured);
+                }
+                Ok(git_gov_core::protocol::Response::Error(e)) => {
+                    eprintln!("❌ Daemon error: {}", e);
+                }
+                Ok(_) => {
+                    eprintln!("❌ Unexpected response from daemon");
+                }
+                Err(e) => {
+                    eprintln!("❌ Could not connect to daemon: {}. Is it running?", e);
+                }
+            }
+        }
+        Commands::Metrics { short } => {
+            match query_daemon(git_gov_core::protocol::Request::GetMetrics).await {
+                Ok(git_gov_core::protocol::Response::Metrics { ldlj, entropy, throughput, human_score }) => {
+                    if short {
+                        println!("{:.4}", human_score);
+                    } else {
+                        println!("Kinematic Metrics (Real-time):");
+                        println!("  LDLJ:         {:.4}", ldlj);
+                        println!("  Entropy:      {:.4}", entropy);
+                        println!("  Throughput:   {:.4}", throughput);
+                        println!("  Human Score:  {:.2}%", human_score * 100.0);
+                    }
+                }
+                Ok(git_gov_core::protocol::Response::Error(e)) => {
+                    if !short { eprintln!("❌ Daemon error: {}", e); }
+                    process::exit(1);
+                }
+                Ok(_) => {
+                    if !short { eprintln!("❌ Unexpected response from daemon"); }
+                    process::exit(1);
+                }
+                Err(e) => {
+                    if !short { eprintln!("❌ Could not connect to daemon: {}. Is it running?", e); }
+                    process::exit(1);
+                }
+            }
         }
         Commands::Verify { commit, format } => {
             println!("Verifying commit: {} (format: {})", commit, format);
@@ -153,4 +214,21 @@ async fn main() {
             }
         }
     }
+}
+
+async fn query_daemon(request: git_gov_core::protocol::Request) -> anyhow::Result<git_gov_core::protocol::Response> {
+    use tokio::net::UnixStream;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    let socket_path = "/tmp/git-gov.sock";
+    let mut stream = UnixStream::connect(socket_path).await?;
+    
+    let request_json = serde_json::to_vec(&request)?;
+    stream.write_all(&request_json).await?;
+    
+    let mut buffer = vec![0; 1024];
+    let n = stream.read(&mut buffer).await?;
+    
+    let response: git_gov_core::protocol::Response = serde_json::from_slice(&buffer[..n])?;
+    Ok(response)
 }
