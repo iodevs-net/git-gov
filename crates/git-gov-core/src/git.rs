@@ -1,4 +1,4 @@
-use git2::{Repository, Signature, Time};
+use git2::{Repository, Signature};
 use std::path::Path;
 
 /// Abre un repositorio Git en la ruta especificada
@@ -7,7 +7,7 @@ pub fn open_repository(path: &Path) -> Result<Repository, String> {
 }
 
 /// Obtiene el último commit de un repositorio
-pub fn get_latest_commit(repo: &Repository) -> Result<git2::Commit, String> {
+pub fn get_latest_commit(repo: &Repository) -> Result<git2::Commit<'_>, String> {
     let head = repo.head().map_err(|e| format!("Failed to get HEAD: {}", e))?;
     let commit = head.peel_to_commit().map_err(|e| format!("Failed to peel to commit: {}", e))?;
     Ok(commit)

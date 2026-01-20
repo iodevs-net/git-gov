@@ -2,7 +2,6 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use thiserror::Error;
-use tracing::{info, warn, error};
 
 #[derive(Debug, Clone)]
 pub struct MouseEvent {

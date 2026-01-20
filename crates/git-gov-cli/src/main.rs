@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use git_gov_core::{sentinel_self_check, git::{open_repository, get_latest_commit, has_trailer, add_trailer}, crypto::{generate_keypair, sign_data}};
+use git_gov_core::{sentinel_self_check, git::{open_repository, get_latest_commit, has_trailer}, crypto::generate_keypair};
 use std::process;
 use std::path::Path;
 
@@ -73,11 +73,11 @@ async fn main() {
         Commands::Init { path } => {
             let repo_path = Path::new(&path);
             match open_repository(repo_path) {
-                Ok(repo) => {
+                Ok(_repo) => {
                     println!("Initializing git-gov in: {}", path);
                     
                     // Generate keypair for the repository
-                    let (signing_key, verifying_key) = generate_keypair();
+                    let (_signing_key, verifying_key) = generate_keypair();
                     let pubkey_bytes = verifying_key.as_bytes();
                     let mut pubkey_hex = String::with_capacity(pubkey_bytes.len() * 2);
                     for byte in pubkey_bytes {

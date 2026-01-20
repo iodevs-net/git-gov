@@ -1,5 +1,4 @@
-use git_gov_core::mouse_sentinel::{MouseSentinel, MouseEvent, KinematicMetrics, MouseSentinelError};
-use std::time::{SystemTime, UNIX_EPOCH};
+use git_gov_core::mouse_sentinel::{MouseSentinel, MouseSentinelError};
 
 #[test]
 fn test_mouse_sentinel_initialization() {

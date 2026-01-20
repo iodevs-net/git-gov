@@ -1,7 +1,7 @@
 use thiserror::Error;
 use tokio::signal::unix::{signal, SignalKind};
 use tokio::time::{sleep, Duration};
-use tracing::{info, warn, error};
+use tracing::{info, warn};
 
 #[derive(Debug, Clone)]
 pub struct GitMonitor {
