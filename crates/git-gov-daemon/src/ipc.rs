@@ -12,7 +12,7 @@ use git_gov_core::mouse_sentinel::KinematicMetrics;
 use git_gov_core::monitor::AttentionBattery;
 use git_gov_core::stats::calculate_human_score;
 
-pub struct IpcServer {
+    pub struct IpcServer {
     socket_path: String,
     metrics: Arc<RwLock<Option<KinematicMetrics>>>,
     coupling_ref: Arc<RwLock<f64>>,
@@ -21,6 +21,7 @@ pub struct IpcServer {
     shutdown: CancellationToken,
     start_time: std::time::Instant,
     signing_key: Arc<git_gov_core::crypto::SigningKey>,
+    min_entropy: f64,
 }
 
 impl IpcServer {
@@ -32,6 +33,7 @@ impl IpcServer {
         events_captured: Arc<RwLock<usize>>,
         shutdown: CancellationToken,
         signing_key: git_gov_core::crypto::SigningKey,
+        min_entropy: f64,
     ) -> Self {
         let verifying_key = signing_key.verifying_key();
         
@@ -52,6 +54,7 @@ impl IpcServer {
             shutdown,
             start_time: std::time::Instant::now(),
             signing_key: Arc::new(signing_key),
+            min_entropy,
         }
     }
 
@@ -78,6 +81,7 @@ impl IpcServer {
                             let events_captured_lock = self.events_captured.clone();
                             let start_time = self.start_time;
                             let signing_key_lock = self.signing_key.clone();
+                            let difficulty_factor = self.min_entropy / 2.5;
                             
                             tokio::spawn(async move {
                                 let mut buffer = vec![0; 1024];
@@ -125,7 +129,10 @@ impl IpcServer {
                                     }
                                     Ok(Request::GetTicket { cost }) => {
                                         let mut battery = battery_lock.write().map_err(|_| "Lock failed").unwrap();
-                                        if battery.consume(cost) {
+                                        // APLICAR DIFICULTAD
+                                        let adjusted_cost = cost * difficulty_factor;
+                                        
+                                        if battery.consume(adjusted_cost) {
                                             let message = format!("VALID:cost={:.2}:ts={}", cost, start_time.elapsed().as_secs());
                                             let signature = git_gov_core::crypto::sign_data(&signing_key_lock, message.as_bytes()).ok();
                                             Response::Ticket {
@@ -138,12 +145,13 @@ impl IpcServer {
                                                 success: false,
                                                 signature: None,
                                                 message: format!(
-                                                    "THERMODYNAMIC FAILURE: Required {:.2}, Battery at {:.2}. Focus more!",
-                                                    cost, battery.level
+                                                    "THERMODYNAMIC FAILURE: Required {:.2} (difficulty factor {:.2}), Battery at {:.2}. Focus more!",
+                                                    adjusted_cost, difficulty_factor, battery.level
                                                 ),
                                             }
                                         }
                                     }
+
                                     Ok(Request::Ping) => Response::Pong,
                                     Err(e) => Response::Error(format!("Invalid request: {}", e)),
                                 };

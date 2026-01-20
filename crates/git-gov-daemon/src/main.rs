@@ -77,7 +77,8 @@ async fn main() -> Result<()> {
         battery_ref,
         events_captured_ref,
         shutdown.clone(),
-        signing_key
+        signing_key,
+        gov_config.governance.min_entropy,
     );
 
     // Start IPC server task
