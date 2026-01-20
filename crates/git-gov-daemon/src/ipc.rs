@@ -76,11 +76,10 @@ impl IpcServer {
                                     Ok(Request::GetMetrics) => {
                                         if let Ok(m_guard) = metrics_lock.read() {
                                             if let Some(m) = m_guard.as_ref() {
-                                                // Calcular human score real si es posible
-                                                // Por ahora usamos un valor representativo basado en LDLJ y Entropy
+                                                // Calcular human score real basado en métricas cinemáticas
                                                 let human_score = calculate_human_score(
-                                                    0.5, // burstiness - dummy for now
-                                                    0.5, // ncd - dummy for now
+                                                    m.burstiness,
+                                                    m.ncd,
                                                 );
                                                 
                                                 Response::Metrics {
