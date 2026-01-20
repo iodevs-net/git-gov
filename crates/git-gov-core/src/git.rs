@@ -226,7 +226,7 @@ pub fn get_trusted_keys(repo: &git2::Repository) -> Result<std::collections::Has
     Ok(keys)
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GovernanceEntry {
     pub commit: String,
     pub author: String,
@@ -234,38 +234,90 @@ pub struct GovernanceEntry {
     pub timestamp: i64,
 }
 
-/// Obtiene el historial de gobernanza (commits firmados)
+#[derive(Debug, Serialize, Deserialize, Default)]
+struct MetricsCache {
+    entries: std::collections::HashMap<String, GovernanceEntry>,
+}
+
+/// Obtiene el historial de gobernanza (commits firmados) optimizado con Cache
 pub fn get_governance_history(repo: &git2::Repository, limit: usize) -> Result<Vec<GovernanceEntry>, String> {
     let mut entries = Vec::new();
+    let mut cache = MetricsCache::default();
+    let gov_dir = repo.path().join("git-gov");
+    let cache_file = gov_dir.join("metrics_cache.json");
+
+    // 1. Load Cache
+    if cache_file.exists() {
+        if let Ok(content) = std::fs::read_to_string(&cache_file) {
+           if let Ok(c) = serde_json::from_str::<MetricsCache>(&content) {
+               cache = c;
+           }
+        }
+    }
+
     let mut revwalk = repo.revwalk().map_err(|e| e.to_string())?;
     revwalk.push_head().map_err(|e| e.to_string())?;
-    
-    // Sort by time descending
     revwalk.set_sorting(git2::Sort::TIME).map_err(|e| e.to_string())?;
+
+    let mut new_entries_found = false;
 
     for oid in revwalk.take(limit) {
         if let Ok(oid) = oid {
+            let sha = oid.to_string();
+            
+            // 2. Check Cache
+            if let Some(cached_entry) = cache.entries.get(&sha) {
+                // Cloning is cheap compared to parsing git objects
+                entries.push(GovernanceEntry {
+                    commit: cached_entry.commit.clone(),
+                    author: cached_entry.author.clone(),
+                    score: cached_entry.score,
+                    timestamp: cached_entry.timestamp,
+                });
+                continue;
+            }
+
+            // 3. Parse if miss
             if let Ok(commit) = repo.find_commit(oid) {
                 let message = commit.message().unwrap_or("");
                 for line in message.lines() {
                      if line.starts_with("git-gov-score:") {
                         let score_part = line.replace("git-gov-score:", "").trim().to_string();
-                        // Format: score=0.85:sig=...
                         let parts: Vec<&str> = score_part.split(":sig=").collect();
                         if !parts.is_empty() {
                             let score_str = parts[0].replace("score=", "");
                              if let Ok(score) = score_str.parse::<f64>() {
-                                 entries.push(GovernanceEntry {
-                                     commit: oid.to_string(),
+                                 let entry = GovernanceEntry {
+                                     commit: sha.clone(),
                                      author: commit.author().name().unwrap_or("Unknown").to_string(),
                                      score,
                                      timestamp: commit.time().seconds(),
+                                 };
+                                 // Add to result
+                                 entries.push(GovernanceEntry {
+                                    commit: entry.commit.clone(),
+                                    author: entry.author.clone(),
+                                    score: entry.score,
+                                    timestamp: entry.timestamp,
                                  });
+                                 // Add to cache
+                                 cache.entries.insert(sha.clone(), entry);
+                                 new_entries_found = true;
                              }
                         }
                      }
                 }
             }
+        }
+    }
+    
+    // 4. Update Cache (Atomicish write)
+    if new_entries_found {
+        if !gov_dir.exists() {
+             let _ = std::fs::create_dir_all(&gov_dir);
+        }
+        if let Ok(json) = serde_json::to_string(&cache) {
+            let _ = std::fs::write(cache_file, json);
         }
     }
     
