@@ -16,26 +16,20 @@ jobs:
       with:
         fetch-depth: 0 # Important: Fetch full history for proper verification
 
-    # TODO: Replace with official setup-git-gov action when available
-    # For now, we assume the binary is available or built here
-    # This example shows how to use it if installed
-    
+    - name: Setup git-gov
+      uses: git-gov/setup-git-gov@v1
+
     - name: Verify Head Commit
       id: verify
       shell: bash
       run: |
-        # In a real workflow, ensure git-gov is installed in PATH
-        # ./target/release/git-gov verify HEAD --format json > verification.json
-        
-        # Example output simulation/usage
         echo "Verifying commit $(git rev-parse HEAD)..."
         
-        # Uncomment when running with actual binary:
-        # OUTPUT=$(git-gov verify HEAD --format json)
-        # echo "Raw Output: $OUTPUT"
-        # STATUS=$(echo "$OUTPUT" | jq -r '.status')
-        # if [ "$STATUS" != "verified" ]; then
-        #   echo "::error::Commit rejected! Low thermodynamic entropy detected."
-        #   exit 1
-        # fi
-        # echo "✅ Commit verified with Score: $(echo "$OUTPUT" | jq -r '.score')"
+        OUTPUT=$(git-gov verify HEAD --format json)
+        echo "Raw Output: $OUTPUT"
+        STATUS=$(echo "$OUTPUT" | jq -r '.status')
+        if [ "$STATUS" != "verified" ]; then
+          echo "::error::Commit rejected! Low thermodynamic entropy detected."
+          exit 1
+        fi
+        echo "✅ Commit verified with Score: $(echo "$OUTPUT" | jq -r '.score')"
