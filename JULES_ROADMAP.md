@@ -5,7 +5,7 @@ Este roadmap define el plan de ejecución atómico para implementar la extensió
 ## Contexto Técnico
 - **Backend**: Daemon en Rust escuchando en `/tmp/git-gov-sensor.sock` (Unix Domain Socket).
 - **Frontend**: Extensión VS Code (TypeScript).
-- **Protocolo**: [focus_protocol.rs](file:///home/lvergara/ionet-workspace/git-gov/crates/git-gov-core/src/focus_protocol.rs) (Fuente de verdad).
+- **Protocolo**: [focus_protocol.rs](git-gov/crates/git-gov-core/src/focus_protocol.rs) (Fuente de verdad).
 
 ---
 
