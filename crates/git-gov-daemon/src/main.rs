@@ -36,16 +36,27 @@ async fn main() -> Result<()> {
     monitor_config.min_entropy = gov_config.governance.min_entropy;
 
     let (input_tx, input_rx) = mpsc::channel(monitor_config.mouse_buffer_size);
+    let (sensor_tx, sensor_rx) = mpsc::channel(100); // Canal para eventos de IDE
     let (file_tx, file_rx) = mpsc::channel(100); 
     let shutdown = CancellationToken::new();
 
-    // Start hardware capture backend
+    // Start hardware capture backend (Legacy v1.0)
     if let Some(backend) = get_default_backend() {
         backend.start(input_tx, shutdown.clone())?;
         info!("Hardware capture backend started");
     } else {
-        warn!("No supported hardware capture backend found for this platform");
+        warn!("No legacy hardware capture backend (evdev) found/enabled");
     }
+
+    // Start IDE Sensor backend (v2.0)
+    let ide_sensor = git_gov_core::backend::ide_sensor::IdeSensorBackend::new("/tmp/git-gov-sensor.sock");
+    let ide_sensor_shutdown = shutdown.clone();
+    tokio::spawn(async move {
+        if let Err(e) = ide_sensor.start(sensor_tx, ide_sensor_shutdown).await {
+            error!("IDE Sensor backend failed: {}", e);
+        }
+    });
+    info!("IDE Sensor backend started (v2.0)");
 
     // Configuración del FileMonitor (Gobernanza de archivos)
     // Convertir de DTO a configuración interna
@@ -55,6 +66,7 @@ async fn main() -> Result<()> {
     let monitor: git_gov_core::monitor::GitMonitor = git_gov_core::monitor::GitMonitor::new(
         monitor_config, 
         input_rx, 
+        sensor_rx,
         file_rx,
         std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")), // watch_root
         shutdown.clone()
@@ -64,6 +76,7 @@ async fn main() -> Result<()> {
     let metrics_ref = monitor.get_metrics_ref();
     let coupling_ref = monitor.get_coupling_ref();
     let battery_ref = monitor.get_battery_ref();
+    let focus_tracker_ref = monitor.get_focus_tracker_ref();
     let events_captured_ref = monitor.get_events_captured_ref();
     
     // Load or create persistent identity
@@ -75,6 +88,7 @@ async fn main() -> Result<()> {
         metrics_ref,
         coupling_ref,
         battery_ref,
+        focus_tracker_ref,
         events_captured_ref,
         shutdown.clone(),
         signing_key,

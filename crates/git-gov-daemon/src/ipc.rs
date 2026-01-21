@@ -11,12 +11,15 @@ use git_gov_core::protocol::{Request, Response};
 use git_gov_core::mouse_sentinel::KinematicMetrics;
 use git_gov_core::monitor::AttentionBattery;
 use git_gov_core::stats::calculate_human_score;
+use git_gov_core::focus_session::FocusTracker;
+use git_gov_core::git::WitnessData;
 
     pub struct IpcServer {
     socket_path: String,
     metrics: Arc<RwLock<Option<KinematicMetrics>>>,
     coupling_ref: Arc<RwLock<f64>>,
     battery_ref: Arc<RwLock<AttentionBattery>>,
+    focus_tracker: Arc<RwLock<FocusTracker>>,
     events_captured: Arc<RwLock<usize>>,
     shutdown: CancellationToken,
     start_time: std::time::Instant,
@@ -30,6 +33,7 @@ impl IpcServer {
         metrics: Arc<RwLock<Option<KinematicMetrics>>>,
         coupling_ref: Arc<RwLock<f64>>,
         battery_ref: Arc<RwLock<AttentionBattery>>,
+        focus_tracker: Arc<RwLock<FocusTracker>>,
         events_captured: Arc<RwLock<usize>>,
         shutdown: CancellationToken,
         signing_key: git_gov_core::crypto::SigningKey,
@@ -50,6 +54,7 @@ impl IpcServer {
             metrics,
             coupling_ref,
             battery_ref,
+            focus_tracker,
             events_captured,
             shutdown,
             start_time: std::time::Instant::now(),
@@ -78,6 +83,7 @@ impl IpcServer {
                             let metrics_lock = self.metrics.clone();
                             let coupling_lock = self.coupling_ref.clone();
                             let battery_lock = self.battery_ref.clone();
+                            let focus_tracker_lock = self.focus_tracker.clone();
                             let events_captured_lock = self.events_captured.clone();
                             let start_time = self.start_time;
                             let signing_key_lock = self.signing_key.clone();
@@ -101,17 +107,19 @@ impl IpcServer {
                                         }
                                     }
                                     Ok(Request::GetMetrics) => {
+                                        let (focus_time_mins, edit_bursts, is_focused) = if let Ok(ft) = focus_tracker_lock.read() {
+                                            let m = ft.get_metrics();
+                                            (m.total_focus_mins, m.edit_burst_count, ft.is_focused())
+                                        } else {
+                                            (0.0, 0, false)
+                                        };
+
+                                        let coupling = coupling_lock.read().map(|g| *g).unwrap_or(1.0);
+                                        let battery_level = battery_lock.read().map(|g| g.level).unwrap_or(0.0);
+
                                         if let Ok(m_guard) = metrics_lock.read() {
                                             if let Some(m) = m_guard.as_ref() {
-                                                // Calcular human score real basado en métricas cinemáticas
-                                                let human_score = calculate_human_score(
-                                                    m.burstiness,
-                                                    m.ncd,
-                                                );
-                                                
-                                                let coupling = coupling_lock.read().map(|g| *g).unwrap_or(1.0);
-                                                let battery_level = battery_lock.read().map(|g| g.level).unwrap_or(0.0);
-
+                                                let human_score = calculate_human_score(m.burstiness, m.ncd);
                                                 Response::Metrics {
                                                     ldlj: m.ldlj,
                                                     entropy: m.velocity_entropy,
@@ -119,9 +127,23 @@ impl IpcServer {
                                                     human_score,
                                                     coupling,
                                                     battery_level,
+                                                    focus_time_mins,
+                                                    edit_bursts,
+                                                    is_focused,
                                                 }
                                             } else {
-                                                Response::Error("No metrics available yet".to_string())
+                                                // No hay métricas cinemáticas, pero enviamos las de foco
+                                                Response::Metrics {
+                                                    ldlj: 0.0,
+                                                    entropy: 0.0,
+                                                    throughput: 0.0,
+                                                    human_score: 0.5, // Base neutral si no hay cinemática
+                                                    coupling,
+                                                    battery_level,
+                                                    focus_time_mins,
+                                                    edit_bursts,
+                                                    is_focused,
+                                                }
                                             }
                                         } else {
                                             Response::Error("Failed to lock metrics".to_string())
@@ -149,6 +171,23 @@ impl IpcServer {
                                                     adjusted_cost, difficulty_factor, battery.level
                                                 ),
                                             }
+                                        }
+                                    }
+
+                                    Ok(Request::GetWitness { reset }) => {
+                                        if let Ok(mut tracker) = focus_tracker_lock.write() {
+                                            let metrics = tracker.get_metrics();
+                                            let witness = WitnessData::from_metrics(&metrics);
+                                            let data = witness.to_json();
+                                            
+                                            if reset {
+                                                tracker.reset();
+                                                info!("FocusTracker reset after GetWitness");
+                                            }
+                                            
+                                            Response::Witness { data }
+                                        } else {
+                                            Response::Error("Failed to lock FocusTracker".to_string())
                                         }
                                     }
 
