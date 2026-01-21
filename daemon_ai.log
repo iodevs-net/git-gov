@@ -1,0 +1,5 @@
+[2m2026-01-21T00:09:28.166936Z[0m [32m INFO[0m [2mgit_gov_daemon[0m[2m:[0m Starting git-gov daemon
+[2m2026-01-21T00:09:28.167351Z[0m [32m INFO[0m [2mgit_gov_daemon[0m[2m:[0m Loaded configuration: Difficulty=Normal, Entropy=0.0001
+[2m2026-01-21T00:09:28.167488Z[0m [32m INFO[0m [2mgit_gov_daemon[0m[2m:[0m Hardware capture backend started
+[2m2026-01-21T00:09:28.167557Z[0m [32m INFO[0m [2mgit_gov_daemon::ipc[0m[2m:[0m Daemon started with Public Key: 316522d65fa0c3130f5be9c7c5c6a3fa6c24ee81bc1239503545adf050472208
+[2m2026-01-21T00:09:28.167768Z[0m [32m INFO[0m [2mgit_gov_daemon::ipc[0m[2m:[0m IPC Server listening on /tmp/git-gov.sock
