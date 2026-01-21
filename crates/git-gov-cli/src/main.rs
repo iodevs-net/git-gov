@@ -127,7 +127,11 @@ async fn main() {
                     
                     let mut authors = std::collections::HashMap::new();
                     for e in &entries {
-                        *authors.entry(e.author.clone()).or_insert(0.0) += e.score;
+                        if let Some(val) = authors.get_mut(&e.author) {
+                            *val += e.score;
+                        } else {
+                            authors.insert(e.author.clone(), e.score);
+                        }
                     }
                     
                     if format == "md" {
