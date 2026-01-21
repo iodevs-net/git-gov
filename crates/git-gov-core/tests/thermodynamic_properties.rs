@@ -16,7 +16,7 @@ proptest! {
         let mut battery = AttentionBattery::new();
         battery.level = initial_charge;
         
-        battery.charge(motor_entropy, Duration::from_secs(seconds), events);
+        battery.charge(motor_entropy, Duration::from_secs(seconds), events, 0);
         
         prop_assert!(battery.level >= 0.0, "Battery level underflow: {}", battery.level);
         prop_assert!(battery.level <= battery.capacity + 1e-10, "Battery level overflow: {}", battery.level);
@@ -35,7 +35,7 @@ proptest! {
         battery.causal_event_count = 100; // Seteamos un base
         
         // Intentamos cargar con 0 eventos adicionales (spoofing)
-        battery.charge(motor_entropy, Duration::from_secs(seconds), 100);
+        battery.charge(motor_entropy, Duration::from_secs(seconds), 100, 0);
         
         prop_assert!(battery.level <= initial_charge + 1e-10, "Battery increased without hardware events!");
     }

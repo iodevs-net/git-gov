@@ -6,22 +6,30 @@
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use std::time::Duration;
+use std::path::PathBuf;
 
-use git_gov_core::monitor::{GitMonitor, GitMonitorConfig};
-use git_gov_core::mouse_sentinel::MouseEvent;
+use git_gov_core::monitor::{GitMonitor, GitMonitorConfig, EditEvent, EditKind};
+use git_gov_core::mouse_sentinel::InputEvent;
 
 #[tokio::test]
 async fn test_monitor_initialization() {
     let config = GitMonitorConfig {
         analysis_interval: Duration::from_millis(100),
         mouse_buffer_size: 10,
+        min_entropy: 2.5,
     };
     
-    let (_tx, rx) = mpsc::channel(10);
+    let (_input_tx, input_rx) = mpsc::channel(10);
+    let (_file_tx, file_rx) = mpsc::channel(10);
     let shutdown = CancellationToken::new();
     
-    let _monitor = GitMonitor::new(config, rx, shutdown.clone())
-        .expect("Failed to create monitor");
+    let _monitor = GitMonitor::new(
+        config, 
+        input_rx, 
+        file_rx, 
+        PathBuf::from("/tmp/git-gov-test"),
+        shutdown.clone()
+    ).expect("Failed to create monitor");
 
     // Verificar que el monitor se creó correctamente
     assert!(true);
@@ -32,22 +40,29 @@ async fn test_monitor_event_capture() {
     let config = GitMonitorConfig {
         analysis_interval: Duration::from_millis(100),
         mouse_buffer_size: 10,
+        min_entropy: 2.5,
     };
     
-    let (tx, rx) = mpsc::channel(10);
+    let (input_tx, input_rx) = mpsc::channel(10);
+    let (_file_tx, file_rx) = mpsc::channel(10);
     let shutdown = CancellationToken::new();
     
-    let _monitor = GitMonitor::new(config, rx, shutdown.clone())
-        .expect("Failed to create monitor");
+    let _monitor = GitMonitor::new(
+        config, 
+        input_rx,
+        file_rx,
+        PathBuf::from("/tmp/git-gov-test"),
+        shutdown.clone()
+    ).expect("Failed to create monitor");
     
     // Enviar evento de mouse
-    let event = MouseEvent {
+    let event = InputEvent::Mouse {
         x: 100.0,
         y: 200.0,
         t: 123456.0,
     };
     
-    tx.send(event).await.expect("Failed to send event");
+    input_tx.send(event).await.expect("Failed to send event");
     
     // Dar tiempo para que el monitor procese el evento
     tokio::time::sleep(Duration::from_millis(50)).await;
@@ -61,13 +76,20 @@ async fn test_monitor_shutdown() {
     let config = GitMonitorConfig {
         analysis_interval: Duration::from_millis(100),
         mouse_buffer_size: 10,
+        min_entropy: 2.5,
     };
     
-    let (_tx, rx) = mpsc::channel(10);
+    let (_input_tx, input_rx) = mpsc::channel(10);
+    let (_file_tx, file_rx) = mpsc::channel(10);
     let shutdown = CancellationToken::new();
     
-    let monitor = GitMonitor::new(config, rx, shutdown.clone())
-        .expect("Failed to create monitor");
+    let monitor = GitMonitor::new(
+        config, 
+        input_rx, 
+        file_rx,
+        PathBuf::from("/tmp/git-gov-test"),
+        shutdown.clone()
+    ).expect("Failed to create monitor");
     
     // Iniciar monitor en una tarea separada
     let handle = tokio::spawn(async move {

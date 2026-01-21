@@ -6,9 +6,8 @@
 //! 
 //! Luego utiliza el MouseSentinel para calcular métricas y demostrar la disparidad.
 
-use git_gov_core::mouse_sentinel::{MouseSentinel, MouseEvent};
+use git_gov_core::mouse_sentinel::{MouseSentinel, InputEvent};
 use git_gov_core::stats::calculate_human_score;
-use std::f64::consts::PI;
 
 fn main() {
     println!("--- Git-Gov Scientific Validation Suite ---\n");
@@ -27,7 +26,7 @@ fn main() {
         let x = 100.0 + 500.0 * (t_human * 0.5).sin();
         let y = 100.0 + 300.0 * (t_human * 0.3).cos();
         
-        human_sentinel.push(MouseEvent { x, y, t: t_human });
+        human_sentinel.push(InputEvent::Mouse { x, y, t: t_human });
     }
 
     // 2. Simulación Mecánica (Bot/IA)
@@ -40,7 +39,7 @@ fn main() {
         let x = 100.0 + 100.0 * t;
         let y = 100.0 + 100.0 * t;
         
-        bot_sentinel.push(MouseEvent { x, y, t });
+        bot_sentinel.push(InputEvent::Mouse { x, y, t });
     }
 
     // Análisis y Reporte

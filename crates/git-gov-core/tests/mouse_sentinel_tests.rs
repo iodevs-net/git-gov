@@ -1,4 +1,8 @@
-use git_gov_core::mouse_sentinel::{MouseSentinel, MouseSentinelError};
+//! Tests para MouseSentinel
+//!
+//! Valida el comportamiento del buffer de eventos y el análisis cinemático.
+
+use git_gov_core::mouse_sentinel::{MouseSentinel, MouseSentinelError, InputEvent};
 
 #[test]
 fn test_mouse_sentinel_initialization() {
@@ -14,9 +18,16 @@ fn test_capture_event() {
      
     let buffer = &sentinel.buffer;
     assert_eq!(buffer.len(), 1);
-    assert_eq!(buffer[0].x, 100.0);
-    assert_eq!(buffer[0].y, 200.0);
-    assert!(buffer[0].t > 0.0); // Verify timestamp is captured
+    
+    // Pattern match para acceder a los campos del enum InputEvent
+    match buffer[0] {
+        InputEvent::Mouse { x, y, t } => {
+            assert_eq!(x, 100.0);
+            assert_eq!(y, 200.0);
+            assert!(t > 0.0); // Verify timestamp is captured
+        }
+        _ => panic!("Expected Mouse event"),
+    }
 }
 
 #[test]
@@ -29,7 +40,14 @@ fn test_buffer_overflow() {
     
     let buffer = &sentinel.buffer;
     assert_eq!(buffer.len(), 3);
-    assert_eq!(buffer[0].x, 2.0); // Oldest event should be dropped
+    
+    // Pattern match para verificar el evento más antiguo
+    match buffer[0] {
+        InputEvent::Mouse { x, .. } => {
+            assert_eq!(x, 2.0); // Oldest event should be dropped
+        }
+        _ => panic!("Expected Mouse event"),
+    }
 }
 
 #[test]
