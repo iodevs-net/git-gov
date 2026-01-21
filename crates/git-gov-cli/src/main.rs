@@ -294,18 +294,27 @@ async fn main() {
         }
         Commands::Metrics { short } => {
             match query_daemon(git_gov_core::protocol::Request::GetMetrics).await {
-                Ok(git_gov_core::protocol::Response::Metrics { ldlj, entropy, throughput, human_score, coupling, battery_level }) => {
+                Ok(git_gov_core::protocol::Response::Metrics { 
+                    ldlj, entropy, throughput, human_score, coupling, battery_level,
+                    focus_time_mins, edit_bursts, is_focused 
+                }) => {
                     if short {
                         println!("{:.4}", human_score);
                     } else {
-                        println!("GovMonitor - Estado Termodinámico:");
-                        println!("  🔋 Energía Kinética: {:.1}%", battery_level);
-                        println!("  🧠 Acoplamiento:     {:.1}%", coupling * 100.0);
+                        println!("GovMonitor - Estado Termodinámico v2.0:");
+                        println!("  🔋 Energía (Kinética+Foco): {:.1}%", battery_level);
+                        println!("  🧠 Acoplamiento Cognitivo:  {:.1}%", coupling * 100.0);
                         println!("  --------------------------------");
-                        println!("  LDLJ (Fluidez):      {:.4}", ldlj);
-                        println!("  Entropía Motora:     {:.4}", entropy);
-                        println!("  Throughput:          {:.4}", throughput);
-                        println!("  Human Score:         {:.2}%", human_score * 100.0);
+                        println!("  ⏱️  Tiempo de Foco:         {:.2} min", focus_time_mins);
+                        println!("  ✍️  Ráfagas de Edición:     {}", edit_bursts);
+                        println!("  👁️  Sensor IDE:             {}", if is_focused { "✅ ACTIVO" } else { "💤 INACTIVO" });
+                        println!("  --------------------------------");
+                        println!("  📊 Métricas Cinemáticas (v1.0):");
+                        println!("     LDLJ (Fluidez):       {:.4}", ldlj);
+                        println!("     Entropía Motora:      {:.4}", entropy);
+                        println!("     Throughput:           {:.4}", throughput);
+                        println!("  --------------------------------");
+                        println!("  🛡️  Human Probability:     {:.2}%", human_score * 100.0);
                     }
                 }
                 Ok(git_gov_core::protocol::Response::Error(e)) => {
@@ -501,6 +510,19 @@ async fn main() {
                             if let Err(e) = std::fs::write(ticket_file, ticket_data) {
                                 eprintln!("⚠️ Error saving ticket: {}", e);
                             }
+                        }
+
+                        // v2.0: Obtener datos del Witness para certificación de foco
+                        match query_daemon(git_gov_core::protocol::Request::GetWitness { reset: true }).await {
+                            Ok(git_gov_core::protocol::Response::Witness { data }) => {
+                                let witness_file = repo.path().join("git-gov").join("latest_witness");
+                                if let Err(e) = std::fs::write(witness_file, data) {
+                                    eprintln!("⚠️ Error saving witness data: {}", e);
+                                } else {
+                                    println!("✅ Focus witness data recorded (v2.0)");
+                                }
+                            }
+                            _ => eprintln!("⚠️ Could not retrieve focus witness data"),
                         }
                         
                         process::exit(0);
