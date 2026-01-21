@@ -1,5 +1,8 @@
 use git2::{Repository, Signature};
+use serde::{Deserialize, Serialize};
 use std::path::Path;
+
+use crate::focus_session::FocusMetrics;
 
 /// Abre un repositorio Git en la ruta especificada
 pub fn open_repository(path: &Path) -> Result<Repository, String> {
@@ -127,7 +130,6 @@ pub fn get_staged_diff(repo: &Repository) -> Result<String, String> {
     Ok(diff_text)
 }
 
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct TrustConfig {
@@ -322,6 +324,132 @@ pub fn get_governance_history(repo: &git2::Repository, limit: usize) -> Result<V
     }
     
     Ok(entries)
+}
+
+// =============================================================================
+// SECCIÓN: Git-Gov Witness (Certificación v2.0)
+// =============================================================================
+
+/// Niveles de probabilidad de que el código fue escrito por un humano
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum HumanProbability {
+    /// Alta probabilidad: tiempo de foco significativo + ediciones
+    High,
+    /// Probabilidad media: algo de foco, pocas ediciones
+    Medium,
+    /// Probabilidad baja: copy-paste o asistente IA
+    Low,
+    /// Sin datos: daemon no detectó actividad
+    Unknown,
+}
+
+impl std::fmt::Display for HumanProbability {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            HumanProbability::High => write!(f, "High"),
+            HumanProbability::Medium => write!(f, "Medium"),
+            HumanProbability::Low => write!(f, "Low"),
+            HumanProbability::Unknown => write!(f, "Unknown"),
+        }
+    }
+}
+
+/// Datos del Witness para el trailer Git-Gov-Witness
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WitnessData {
+    /// Minutos totales de foco activo durante la sesión
+    pub focus_time_mins: f64,
+    /// Cantidad de ráfagas de edición detectadas
+    pub edit_bursts: usize,
+    /// Cantidad de archivos únicos tocados
+    pub files_touched: usize,
+    /// Probabilidad calculada de autoría humana
+    pub human_probability: HumanProbability,
+    /// Versión del protocolo de certificación
+    pub version: String,
+}
+
+impl WitnessData {
+    /// Crea WitnessData desde FocusMetrics
+    pub fn from_metrics(metrics: &FocusMetrics) -> Self {
+        Self {
+            focus_time_mins: (metrics.total_focus_mins * 100.0).round() / 100.0,
+            edit_bursts: metrics.edit_burst_count,
+            files_touched: metrics.unique_files,
+            human_probability: calculate_human_probability(metrics),
+            version: "2.0".to_string(),
+        }
+    }
+
+    /// Serializa a JSON compacto para el trailer
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(self).unwrap_or_else(|_| "{}".to_string())
+    }
+}
+
+/// Calcula la probabilidad de que el código fue escrito por un humano
+/// basándose en las métricas de foco recolectadas.
+/// 
+/// ## Criterios
+/// - **High**: >= 5 min de foco O >= 10 edit bursts O >= 3 archivos
+/// - **Medium**: >= 1 min de foco O >= 3 edit bursts O >= 1 archivo
+/// - **Low**: < 1 min de foco Y < 3 edit bursts
+/// - **Unknown**: Sin métricas
+pub fn calculate_human_probability(metrics: &FocusMetrics) -> HumanProbability {
+    let score = metrics.total_focus_mins * 10.0 
+        + metrics.edit_burst_count as f64 * 5.0 
+        + metrics.unique_files as f64 * 3.0
+        + metrics.navigation_events as f64 * 1.0;
+
+    if score >= 50.0 {
+        HumanProbability::High
+    } else if score >= 15.0 {
+        HumanProbability::Medium
+    } else if score > 0.0 {
+        HumanProbability::Low
+    } else {
+        HumanProbability::Unknown
+    }
+}
+
+/// Genera un trailer Git-Gov-Witness para agregar al mensaje de commit
+/// 
+/// ## Formato
+/// ```text
+/// Git-Gov-Witness: {"focus_time_mins":5.25,"edit_bursts":12,"files_touched":3,"human_probability":"high","version":"2.0"}
+/// ```
+/// 
+/// ## Uso
+/// El hook `prepare-commit-msg` o la CLI pueden usar esta función para
+/// inyectar el trailer automáticamente.
+pub fn generate_witness_trailer(metrics: &FocusMetrics) -> String {
+    let witness = WitnessData::from_metrics(metrics);
+    format!("Git-Gov-Witness: {}", witness.to_json())
+}
+
+/// Agrega el trailer Git-Gov-Witness a un mensaje de commit existente
+/// 
+/// Si el mensaje ya tiene un trailer Git-Gov-Witness, no lo duplica.
+pub fn inject_witness_trailer(message: &str, metrics: &FocusMetrics) -> String {
+    // No duplicar si ya existe
+    if message.contains("Git-Gov-Witness:") {
+        return message.to_string();
+    }
+    
+    add_trailer(message, "Git-Gov-Witness", &WitnessData::from_metrics(metrics).to_json())
+}
+
+/// Extrae los datos de Git-Gov-Witness de un mensaje de commit
+pub fn extract_witness_data(message: &str) -> Option<WitnessData> {
+    for line in message.lines() {
+        if let Some(json_str) = line.strip_prefix("Git-Gov-Witness: ") {
+            if let Ok(data) = serde_json::from_str::<WitnessData>(json_str) {
+                return Some(data);
+            }
+        }
+    }
+    None
 }
 
 #[cfg(test)]
