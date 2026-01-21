@@ -102,6 +102,23 @@ Locally, a user could try to evade it. However, in a professional environment, t
 
 ---
 
+## 🔮 Future Roadmap: v2.0 "The All-Seeing Eye"
+
+### The Challenge: "Proof of Focus"
+In v1.0, Git-Gov validates **"Proof of Human Presence."** If you game intensely, you generate valid entropy to commit. This is "working as intended" to prevent bot farms, but it doesn't guarantee you were coding.
+
+### The Goal: v2.0
+Implement **"Proof of Focus"**: Energy only charges when the active window is an IDE or Terminal.
+
+**Why do we need help?**
+Linux fragmentation (X11 vs Wayland) makes active window detection a monumental compatibility challenge.
+- **X11**: Trivial (`xprop`).
+- **Wayland**: Complex (requires specific Compositor support or Portals).
+
+We are looking for Rust + Linux Desktop API experts to build the Daemon's vision layer!
+
+---
+
 ## 🏛️ The Verdict of Inertia
 
 Git-Gov does not ban AI. It **regulates it thermodynamically**. If you use AI to generate code, you must spend enough time curating, reading, and refining it to charge the battery needed to upload it.

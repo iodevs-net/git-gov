@@ -102,6 +102,23 @@ Localmente, un usuario podría intentar evadirlo. Sin embargo, en un entorno pro
 
 ---
 
+## 🔮 Roadmap Futuro: v2.0 "El Ojo que Todo lo Ve"
+
+### El desafío "Proof of Focus"
+En la versión v1.0, Git-Gov valida **"Proof of Human Presence"** (presencia humana). Si juegas videojuegos intensamente, generarás entropía válida para commitear. Esto es "working as intended" para evitar granjas de bots, pero no garantiza que estuviers programando.
+
+### La Meta v2.0
+Implementar **"Proof of Focus"**: que la energía solo cargue cuando la ventana activa sea un IDE o Terminal.
+
+**¿Por qué necesitamos ayuda?**
+La fragmentación de Linux (X11 vs Wayland) hace que detectar la ventana activa sea un desafío monumental de compatibilidad.
+- **X11**: Trivial (`xprop`).
+- **Wayland**: Complejo (requiere soporte específico de Compositor o Portals).
+
+¡Buscamos contribuidores expertos en Rust + Linux Desktop APIs para construir la capa de visión del Demonio!
+
+---
+
 ## 🏛️ El Veredicto de la Inercia
 
 Git-Gov no prohíbe la IA. La **regula termodinámicamente**. Si usas IA para generar código, debes pasar el tiempo suficiente curándolo, leyéndolo y refinándolo para cargar la batería necesaria para subirlo. 
