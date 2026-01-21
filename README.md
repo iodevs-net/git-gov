@@ -120,8 +120,8 @@ Date:   Mon Jan 20 14:00:00 2026 -0300
 
 Estamos pivotando activamente hacia la versión 2.0.
 
-* [ ] **Fase 1: El Protocolo (En Progreso)** - Definición del esquema JSON IPC entre IDE y Daemon.
-* [ ] **Fase 2: El Testigo** - Primera extensión oficial para VS Code.
+* [x] **Fase 1: El Protocolo & Backend (Completado)** - Definición del esquema JSON IPC e integración en el Daemon.
+* [ ] **Fase 2: El Testigo (Siguiente)** - Primera extensión oficial para VS Code.
 * [ ] **Fase 3: El Verificador** - GitHub Action para automatizar la revisión de PRs.
 
 ---
