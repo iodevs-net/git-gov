@@ -39,15 +39,26 @@ pub fn install_hooks(repo: &Repository) -> Result<(), String> {
         std::fs::create_dir_all(&hooks_dir).map_err(|e| e.to_string())?;
     }
 
-    // 1. Hook de preparación de mensaje (para añadir trailers firmados)
+    // 1. Hook de preparación de mensaje (para añadir trailers firmados y certificación v2.0)
     let prepare_hook_path = hooks_dir.join("prepare-commit-msg");
     let prepare_hook_content = r#"#!/bin/bash
-# git-gov hook: Añade el ticket firmado al mensaje del commit
-TICKET_FILE=".git/git-gov/latest_ticket"
+# git-gov hook: Añade el ticket firmado y certificación v2.0
+GOV_DIR=".git/git-gov"
+
+# v1.0: PoHW Score
+TICKET_FILE="$GOV_DIR/latest_ticket"
 if [ -f "$TICKET_FILE" ]; then
     TICKET_DATA=$(cat "$TICKET_FILE")
     git interpret-trailers --in-place --trailer "git-gov-score: $TICKET_DATA" "$1"
     rm "$TICKET_FILE"
+fi
+
+# v2.0: Proof of Focus Witness
+WITNESS_FILE="$GOV_DIR/latest_witness"
+if [ -f "$WITNESS_FILE" ]; then
+    WITNESS_DATA=$(cat "$WITNESS_FILE")
+    git interpret-trailers --in-place --trailer "Git-Gov-Witness: $WITNESS_DATA" "$1"
+    rm "$WITNESS_FILE"
 fi
 "#;
     std::fs::write(&prepare_hook_path, prepare_hook_content).map_err(|e| e.to_string())?;
