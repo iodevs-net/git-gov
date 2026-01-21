@@ -161,13 +161,17 @@ impl Debouncer {
 
         self.seen += 1;
 
-        let allow = match self.last_emit_us.get(path) {
-            Some(&prev) if ts_us.saturating_sub(prev) < self.window_us => false,
-            _ => true,
-        };
-
-        if allow {
+        let allow;
+        if let Some(last) = self.last_emit_us.get_mut(path) {
+            if ts_us.saturating_sub(*last) < self.window_us {
+                allow = false;
+            } else {
+                *last = ts_us;
+                allow = true;
+            }
+        } else {
             self.last_emit_us.insert(path.to_path_buf(), ts_us);
+            allow = true;
         }
 
         if self.seen % self.gc_every == 0 {
@@ -734,4 +738,5 @@ mod tests {
         assert!(!d.should_emit(p, EditKind::Modify, 1_000_050));
         assert!(d.should_emit(p, EditKind::Delete, 1_000_060));
     }
+
 }
