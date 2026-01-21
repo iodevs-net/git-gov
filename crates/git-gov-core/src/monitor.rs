@@ -437,11 +437,14 @@ pub enum MonitorError {
 // SECTION 2: Mouse Telemetry (GitMonitor)
 // =========================================================================
 
-/// Batería de Atención (Batería Kinética)
+/// Batería de Atención (Batería Kinética/Foco)
 /// 
-/// Acumula "energía" basada en la complejidad del movimiento humano y
-/// la pierde con el tiempo (leaky bucket). Representa el esfuerzo cognitivo
-/// disponible para validar código.
+/// Acumula "energía" basada en:
+/// - **v1.0 (Legacy)**: Complejidad del movimiento humano (mouse/teclado)
+/// - **v2.0 (Focus)**: Tiempo de foco activo + ráfagas de edición
+/// 
+/// La energía se pierde con el tiempo (leaky bucket). Representa el esfuerzo
+/// cognitivo disponible para validar código.
 #[derive(Debug, Clone)]
 pub struct AttentionBattery {
     pub level: f64,
@@ -462,7 +465,10 @@ impl AttentionBattery {
         }
     }
 
-    /// Carga la batería basándose en entropía motora detectada y validación de eventos
+    /// [v1.0 LEGACY] Carga basándose en entropía motora y eventos de hardware
+    /// 
+    /// Este método se mantiene para compatibilidad con el backend `evdev`.
+    /// Para v2.0, usar `charge_focus()` en su lugar.
     pub fn charge(&mut self, motor_entropy: f64, duration: Duration, hardware_events: usize, keyboard_hits: usize) {
         self.apply_decay();
         
@@ -479,6 +485,36 @@ impl AttentionBattery {
         
         self.level = (self.level + mouse_charge + keyboard_charge).min(self.capacity);
         self.causal_event_count = hardware_events;
+    }
+
+    /// [v2.0 FOCUS] Carga basándose en tiempo de foco activo
+    /// 
+    /// Este método implementa el modelo "Proof of Focus" que valida
+    /// el trabajo cognitivo (Deep Work) sin requerir movimiento constante.
+    /// 
+    /// ## Fórmula de Carga
+    /// - Tiempo de foco: 1 minuto de foco activo = 5 puntos de energía
+    /// - Ediciones: sqrt(ráfagas) * 2 puntos (recompensa incremental decreciente)
+    /// - Navegación: 0.5 puntos por evento (lectura activa)
+    /// 
+    /// ## Ejemplo
+    /// Un Senior que lee documentación por 10 minutos (foco activo)
+    /// y luego hace 4 ediciones rápidas obtiene: 50 + 4 = 54 puntos.
+    pub fn charge_focus(&mut self, focus_duration: Duration, edit_burst_count: usize, navigation_events: usize) {
+        self.apply_decay();
+        
+        // Tiempo de foco activo carga linealmente (1 min focus = 5 pts)
+        let focus_charge = (focus_duration.as_secs_f64() / 60.0) * 5.0;
+        
+        // Bonus por ediciones reales (prueba de interacción)
+        // Usamos sqrt para recompensa incremental decreciente
+        let edit_bonus = (edit_burst_count as f64).sqrt() * 2.0;
+        
+        // Bonus por navegación (lectura activa: scroll, goto definition, etc.)
+        let nav_bonus = (navigation_events as f64) * 0.5;
+        
+        let total_charge = focus_charge + edit_bonus + nav_bonus;
+        self.level = (self.level + total_charge).min(self.capacity);
     }
 
     /// Consume energía (Costo Entrópico)
