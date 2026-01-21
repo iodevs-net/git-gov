@@ -4,8 +4,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio_util::sync::CancellationToken;
 use tracing::{info, error};
 use anyhow::Result;
-use std::path::Path;
-use std::fs;
+use tokio::fs;
 
 use git_gov_core::protocol::{Request, Response};
 use git_gov_core::mouse_sentinel::KinematicMetrics;
@@ -59,8 +58,8 @@ impl IpcServer {
     }
 
     pub async fn start(self) -> Result<()> {
-        if Path::new(&self.socket_path).exists() {
-            let _ = fs::remove_file(&self.socket_path);
+        if fs::try_exists(&self.socket_path).await.unwrap_or(false) {
+            let _ = fs::remove_file(&self.socket_path).await;
         }
 
         let listener = UnixListener::bind(&self.socket_path)?;
@@ -166,7 +165,7 @@ impl IpcServer {
             }
         }
 
-        let _ = fs::remove_file(&self.socket_path);
+        let _ = fs::remove_file(&self.socket_path).await;
         Ok(())
     }
 }
