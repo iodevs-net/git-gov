@@ -1,5 +1,7 @@
 pub mod backend;
 pub mod protocol;
+pub mod focus_protocol;
+pub mod focus_session;
 pub mod crypto;
 pub mod entropy;
 pub mod git;
