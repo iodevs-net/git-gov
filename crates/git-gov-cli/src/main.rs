@@ -184,10 +184,7 @@ async fn main() {
                     // Generate keypair for the repository
                     let (_signing_key, verifying_key) = generate_keypair();
                     let pubkey_bytes = verifying_key.as_bytes();
-                    let mut pubkey_hex = String::with_capacity(pubkey_bytes.len() * 2);
-                    for byte in pubkey_bytes {
-                        pubkey_hex.push_str(&format!("{:02x}", byte));
-                    }
+                    let pubkey_hex = hex::encode(pubkey_bytes);
                     
                     println!("Generated new keypair for repository");
                     println!("Public key: {}", pubkey_hex);
