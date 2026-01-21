@@ -19,6 +19,8 @@ use tokio_util::sync::CancellationToken;
 use tracing::{info, warn};
 
 use crate::mouse_sentinel::{MouseSentinel, InputEvent, KinematicMetrics};
+use crate::focus_protocol::{SensorEvent, NavigationType};
+use crate::focus_session::{FocusTracker, FocusMetrics};
 
 // =========================================================================
 // SECTION 1: File Telemetry (FileMonitor)
@@ -559,6 +561,7 @@ pub struct GitMonitor {
     shutdown: CancellationToken,
     mouse_sentinel: MouseSentinel,
     input_rx: mpsc::Receiver<InputEvent>,
+    sensor_rx: mpsc::Receiver<SensorEvent>, // Nueva entrada de eventos de foco
     file_rx: mpsc::Receiver<EditEvent>,
     analysis_interval: Duration,
     latest_metrics: Arc<RwLock<Option<KinematicMetrics>>>,
@@ -568,12 +571,14 @@ pub struct GitMonitor {
     keyboard_hits: Arc<AtomicU64>,
     watch_root: PathBuf,
     min_entropy: f64,
+    focus_tracker: Arc<RwLock<FocusTracker>>, // Tracker de foco compartido
 }
 
 impl GitMonitor {
     pub fn new(
         config: GitMonitorConfig,
         input_rx: mpsc::Receiver<InputEvent>,
+        sensor_rx: mpsc::Receiver<SensorEvent>,
         file_rx: mpsc::Receiver<EditEvent>,
         watch_root: PathBuf,
         shutdown: CancellationToken,
@@ -582,6 +587,7 @@ impl GitMonitor {
             shutdown,
             mouse_sentinel: MouseSentinel::new(config.mouse_buffer_size),
             input_rx,
+            sensor_rx,
             file_rx,
             analysis_interval: config.analysis_interval,
             latest_metrics: Arc::new(RwLock::new(None)),
@@ -591,7 +597,12 @@ impl GitMonitor {
             keyboard_hits: Arc::new(AtomicU64::new(0)),
             watch_root,
             min_entropy: config.min_entropy,
+            focus_tracker: Arc::new(RwLock::new(FocusTracker::new())),
         })
+    }
+
+    pub fn get_focus_metrics(&self) -> FocusMetrics {
+        self.focus_tracker.read().unwrap().get_metrics()
     }
 
     pub fn get_metrics_ref(&self) -> Arc<RwLock<Option<KinematicMetrics>>> {
@@ -604,6 +615,10 @@ impl GitMonitor {
 
     pub fn get_coupling_ref(&self) -> Arc<RwLock<f64>> {
         self.latest_coupling.clone()
+    }
+
+    pub fn get_focus_tracker_ref(&self) -> Arc<RwLock<FocusTracker>> {
+        self.focus_tracker.clone()
     }
 
     pub fn get_events_captured_ref(&self) -> Arc<RwLock<usize>> {
@@ -622,17 +637,11 @@ impl GitMonitor {
                 }
 
                 Some(event) = self.input_rx.recv() => {
-                    match event {
-                        InputEvent::Mouse { x, y, .. } => {
-                            self.mouse_sentinel.capture_event(x, y);
-                        }
-                        InputEvent::Keyboard { .. } => {
-                            self.keyboard_hits.fetch_add(1, Ordering::SeqCst);
-                        }
-                    }
-                    if let Ok(mut count) = self.events_captured.write() {
-                        *count += 1;
-                    }
+                    self.handle_input_event(event);
+                }
+
+                Some(sensor_event) = self.sensor_rx.recv() => {
+                    self.handle_sensor_event(sensor_event);
                 }
 
                 Some(file_event) = self.file_rx.recv() => {
@@ -647,6 +656,51 @@ impl GitMonitor {
 
         info!("GitMonitor stopped cleanly");
         Ok(())
+    }
+
+    fn handle_input_event(&mut self, event: InputEvent) {
+        match event {
+            InputEvent::Mouse { x, y, .. } => {
+                self.mouse_sentinel.capture_event(x, y);
+            }
+            InputEvent::Keyboard { .. } => {
+                self.keyboard_hits.fetch_add(1, Ordering::SeqCst);
+            }
+        }
+        if let Ok(mut count) = self.events_captured.write() {
+            *count += 1;
+        }
+    }
+
+    fn handle_sensor_event(&mut self, event: SensorEvent) {
+        if let Ok(mut tracker) = self.focus_tracker.write() {
+            match event {
+                SensorEvent::FocusGained { file_path, .. } => {
+                    tracker.focus_gained(file_path.clone().map(PathBuf::from));
+                    info!("Focus Gained: {:?}", file_path);
+                }
+                SensorEvent::FocusLost { .. } => {
+                    tracker.focus_lost();
+                    info!("Focus Lost");
+                }
+                SensorEvent::EditBurst { file_path, chars_delta, .. } => {
+                    tracker.edit_burst(&file_path, chars_delta);
+                }
+                SensorEvent::Navigation { file_path, nav_type, .. } => {
+                    tracker.navigation(&file_path);
+                    if nav_type == NavigationType::FileSwitch {
+                         info!("Switched to file: {}", file_path);
+                    }
+                }
+                SensorEvent::Heartbeat { .. } => {
+                    tracker.heartbeat();
+                }
+                SensorEvent::Disconnect { .. } => {
+                    tracker.reset();
+                    warn!("IDE Sensor disconnected");
+                }
+            }
+        }
     }
 
     async fn handle_file_event(&mut self, event: EditEvent) {
@@ -710,8 +764,29 @@ impl GitMonitor {
 
                 // [TERMODINÁMICA] Cargamos la batería con el esfuerzo detectado Y validación causal
                 if let Ok(mut batt) = self.battery.write() {
+                    // Carga v1.0 (Kinética)
                     let k_hits = self.keyboard_hits.swap(0, Ordering::SeqCst);
                     batt.charge(metrics.velocity_entropy / 8.0, self.analysis_interval, events, k_hits as usize);
+
+                    // Carga v2.0 (Deep Work / Focus)
+                    if let Ok(tracker) = self.focus_tracker.read() {
+                        let metrics = tracker.get_metrics();
+                        // Pasamos Duración aproximada de foco en este intervalo o el acumulado?
+                        // La batería v2 maneja acumulados incrementales.
+                        // Para simplificar, cargamos según minutos de foco detectados en este tick.
+                        // Pero focus_tracker.get_metrics() es acumulativo.
+                        // Necesitamos calcular el delta de foco.
+                        
+                        // NOTA: Para v2.0, AttentionBattery::charge_focus debería recibir 
+                        // métricas incrementales o el tracker debería proveerlas.
+                        // Implementaremos charge_focus con el acumulado total del tracker 
+                        // pero la batería solo sube hasta capacity.
+                        batt.charge_focus(
+                            Duration::from_secs_f64(metrics.total_focus_mins * 60.0),
+                            metrics.edit_burst_count,
+                            metrics.navigation_events
+                        );
+                    }
                 }
 
                 if let Ok(mut latest) = self.latest_metrics.write() {
