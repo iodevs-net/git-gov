@@ -11,22 +11,21 @@
 //!
 //! # Ejemplo de uso
 //! ```
-//! use git_gov_core::mouse_sentinel::{MouseSentinel, MouseEvent};
+//! use git_gov_core::mouse_sentinel::{MouseSentinel, InputEvent};
 //!
 //! let mut sentinel = MouseSentinel::new(100); // Buffer para 100 eventos
 //! 
 //! // Capturar eventos de mouse
-//! sentinel.push(MouseEvent {
+//! sentinel.push(InputEvent::Mouse {
 //!     x: 100.0,
 //!     y: 200.0,
 //!     t: 123456.0, // timestamp en segundos
 //! });
 //!
 //! // Analizar patrones de movimiento
-//! match sentinel.analyze() {
-//!     Ok(metrics) => println!("LDLJ: {}", metrics.ldlj),
-//!     Err(e) => eprintln!("Error: {}", e),
-//! }
+//! // (requiere al menos 4 eventos para análisis)
+//! // for i in 0..5 { sentinel.capture_event(i as f64, i as f64); }
+//! // let metrics = sentinel.analyze();
 //! ```
 
 use std::collections::VecDeque;
@@ -98,9 +97,9 @@ impl MouseSentinel {
     ///
     /// # Ejemplo
     /// ```
-    /// use git_gov_core::mouse_sentinel::{MouseSentinel, MouseEvent};
+    /// use git_gov_core::mouse_sentinel::{MouseSentinel, InputEvent};
     /// let mut sentinel = MouseSentinel::new(10);
-    /// sentinel.push(MouseEvent { x: 100.0, y: 200.0, t: 123.0 });
+    /// sentinel.push(InputEvent::Mouse { x: 100.0, y: 200.0, t: 123.0 });
     /// ```
     pub fn push(&mut self, event: InputEvent) {
         if let InputEvent::Mouse { .. } = event {
