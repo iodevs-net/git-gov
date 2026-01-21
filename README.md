@@ -1,129 +1,140 @@
-# Git-Gov: Proof of Human Work (PoHW) 🦾⛓️
+# Git-Gov: Proof of Focus & Code Provenance 🛡️🧠
 
-> **"La información debe ser pagada con energía. No hay commit sin sudor."**
+> **"Confianza descentralizada en la era de la IA Generativa."**
 
-Git-Gov es un sistema de gobernanza soberana para repositorios Git que implementa la **Primera Ley de la Termodinámica del Software**. Su misión es erradicar la "Bio-Puppetry" (el uso de humanos como simples firmadores de código de IA) mediante un sistema de validación cinemática invisible y matemáticamente incorruptible.
+**Git-Gov** es un estándar abierto y una suite de herramientas para certificar la **atención humana** en el desarrollo de software.
 
-## 🌌 La Filosofía de la Sombra
-
-En la era de la IA generativa, el código es barato, pero la **atención humana** es el recurso más escaso y valioso. Git-Gov actúa como una "sombra" que monitorea tu esfuerzo biomecánico (mouse, tiempo de enfoque) y lo convierte en **Créditos de Atención**.
-
-Sin estos créditos, el repositorio simplemente te deniega la entrada. Es el fin del "Code Dumping".
+En un mundo donde el código puede generarse en milisegundos a coste cero, la **atención humana** se convierte en el recurso más escaso y valioso. Git-Gov permite a los desarrolladores probar criptográficamente que han dedicado tiempo y foco a su trabajo, sin sacrificar su privacidad.
 
 ---
 
-## ⚙️ Arquitectura Termodinámica
+## 🌪️ El Problema: La Crisis de Entropía
 
-Git-Gov opera bajo un ciclo de energía cerrado:
+La adopción masiva de LLMs (Modelos de Lenguaje) ha creado un nuevo desafío para los mantenedores de Open Source:
 
-1.  **Captura Kinética**: El Daemon (`git-gov-daemon`) captura la entropía de tus movimientos físicos.
-2.  **Batería de Atención**: Tu esfuerzo carga una batería virtual. Si el movimiento es mecánico (scripts/jigglers), la batería no carga debido a la **Baja Entropía de NCD**.
-3.  **Costo Entrópico**: Cada línea de código que escribes tiene un costo basado en su densidad de información. 
-4.  **Aduana de Git**: Al hacer `git commit`, el sistema verifica si tienes suficiente "energía" para pagar la complejidad de tus cambios.
+1. **Spam de Alta Velocidad:** Pull Requests (PRs) generados por bots o usuarios que "copian y pegan" sin revisar.
+2. **Ilusión de Competencia:** Código sintácticamente correcto pero lógicamente frágil o alucinatorio.
+3. **Fatiga del Mantenedor:** Imposibilidad de distinguir entre un PR cuidado artesanalmente y uno generado en 3 segundos.
+
+Los detectores de IA actuales analizan el *texto* (y fallan a menudo). **Git-Gov analiza el *proceso*.**
+
+---
+
+## 💡 La Solución: Proof of Focus (PoF)
+
+Git-Gov implementa un protocolo de **"Testigo Silencioso"** que certifica el esfuerzo cognitivo sin espiar al usuario.
+
+En lugar de bloquear commits o exigir permisos invasivos, Git-Gov actúa como un notario digital:
+
+1. **El Testigo (IDE Extension):** Una extensión ligera en tu editor (VS Code, JetBrains) detecta si estás trabajando activamente en un archivo (foco de ventana, patrones de edición, scroll de lectura). **No registra lo que escribes.**
+2. **El Notario (Local Daemon):** Un proceso en segundo plano (sin privilegios de root) acumula "Créditos de Foco" basados en tu actividad real.
+3. **La Insignia (Git Trailer):** Al hacer commit, si tienes suficientes créditos, Git-Gov firma criptográficamente el commit añadiendo metadatos verificables.
+
+### El Resultado:
+
+Un commit firmado que le dice al mantenedor:
+
+> *"Este código fue editado y revisado por un humano durante 25 minutos antes de ser enviado."*
+
+---
+
+## 🏗️ Arquitectura v2.0 (Privacidad por Diseño)
+
+A diferencia de herramientas de monitoreo intrusivas, Git-Gov está diseñado bajo principios estrictos de privacidad:
+
+* ✅ **Sin Root:** No requiere permisos de administrador ni acceso al Kernel (`/dev/input`).
+* ✅ **Sin Keylogger:** No registramos teclas ni contenido del código. Solo métricas de metadatos (tiempo de foco, frecuencia de edición).
+* ✅ **Local-First:** Todos los datos se procesan en tu máquina. Nada sale de tu red.
 
 ```mermaid
 graph LR
-    H[Humano] -- Movimiento --> D[Daemon]
-    D -- Carga --> B[Batería Kinética]
-    B -- Paga --> C[Commit Git]
-    I[IA/Bot] -- Inyección --> X[ERROR: Insufficient Energy]
+    IDE[VS Code / Editor] -- "Actividad de Foco" --> Daemon[Git-Gov Daemon (User Space)]
+    Daemon -- "Firma Criptográfica (Ed25519)" --> Git[Git Trailer]
+    Git -- "Commit Verificado" --> Repo[Repositorio Remoto]
+    CI[CI/CD] -- "Verifica Firma" --> Badge[Insignia de Calidad]
+
 ```
 
 ---
 
-## 🛡️ Características de Élite
+## 🚀 Guía de Inicio Rápido
 
-*   **Inmune al Spoofing**: Requiere eventos de hardware reales capturados a nivel de kernel (**Validación de Causalidad**).
-*   **Balance Metabólico**: El sistema sabe que un humano no puede curar 1,000 líneas de código denso en 1 minuto.
-*   **Privacidad Total**: No se graban coordenadas ni contenido. Solo se procesa la entropía estadística localmente.
-*   **Matemáticamente Íntegro**: Validado mediante **Property-Based Testing** (`proptest`) contra miles de escenarios de ataque.
+### Para Desarrolladores (Demuestra tu Trabajo)
 
----
-
-## 🚀 Instalación Élite (Linux)
-
-Para una instalación formal y global en tu sistema:
-
+1. **Instala el CLI:**
 ```bash
-git clone https://github.com/iodevs-net/git-gov.git
-cd git-gov
-make install
+cargo install git-gov
+
 ```
-*Este comando compila el proyecto y despliega los binarios `git-gov` y `git-gov-daemon` en `/usr/local/bin`.*
 
----
 
-## 🚀 Despliegue de la Aduana
-
-### 1. Iniciar el Centinela
-Para que el sistema empiece a acumular tu energía en background:
-```bash
-git-gov on
-```
-*Usa `git-gov off` para detenerlo en cualquier momento.*
-
-### 2. Activar la Soberanía
-En tu repositorio, inicializa la aduana termodinámica:
+2. **Instala la Extensión en tu IDE:**
+Busca "Git-Gov Witness" en el marketplace de VS Code (o tu editor favorito).
+3. **Inicializa en tu Repo:**
 ```bash
 git-gov init
-```
-*Esto instalará los hooks de `pre-commit` y `prepare-commit-msg` que bloquean físicamente el flujo si el balance de energía es negativo.*
 
-### 3. Consultar tu Reserva
-¿Cuánta energía de atención te queda?
-```bash
-git-gov status   # Para ver si está corriendo
-git-gov metrics  # Para ver tu energía kinética
 ```
 
----
 
-## 🔒 Seguridad y FAQ
+*¡Listo! Trabaja normalmente. Tus commits ahora llevarán la firma de "Human Verified".*
 
-### ¿Cómo evita los "Mouse Jigglers" o Scripts?
-Los bots generan patrones predecibles. Git-Gov utiliza **Distancia de Compresión Normalizada (NCD)** para medir la entropía del movimiento. Si el patrón es mecánico, la batería no carga. Un script tendría que simular la fisiología humana a la perfección, lo cual es casi tan difícil como escribir el código uno mismo.
+### Para Mantenedores (Filtra el Ruido)
 
-### ¿Puedo hackear la memoria para darme energía infinita?
-No. El Daemon implementa **Validación de Causalidad**. El sistema cruza el nivel de energía con el conteo de eventos de hardware reales del kernel (`/dev/input`). Si tu energía sube sin movimiento físico reportado por el driver, el sistema detecta una anomalía y bloquea la emisión de tickets.
+Integra Git-Gov en tu pipeline de CI/CD (GitHub Actions, GitLab CI) para priorizar PRs humanos.
 
-### ¿Es privado? ¿Me están espiando?
-Totalmente. Git-Gov **no graba coordenadas ni contenido**. Solo procesa deltas de velocidad de forma estadística. Los datos mueren en un buffer circular en RAM cada 5 segundos y nunca se escriben en disco ni se envían a la red.
+```yaml
+# Ejemplo en GitHub Actions
+steps:
+  - uses: iodevs-net/git-gov-action@v2
+    with:
+      policy: "require-human-focus"
+      min-minutes: 15
 
-### ¿Qué pasa si alguien borra el Hook de Git?
-Localmente, un usuario podría intentar evadirlo. Sin embargo, en un entorno profesional, el servidor remoto (Oráculo) rechaza cualquier commit que no incluya el **Trailer Firmado con Ed25519** generado por un Daemon legítimo.
+```
 
----
-
-## 📂 Anatomía del Proyecto
-
-- `git-gov-core`: El motor de entropía, termodinámica y validación de hardware.
-- `git-gov-cli`: Tu interfaz con la aduana y gestión de identidad criptográfica.
-- `git-gov-daemon`: El centinela invisible que habita en el background.
+* **Verificado:** El PR recibe una etiqueta verde `human-verified`.
+* **No Verificado:** El PR se marca para revisión exhaustiva o se etiqueta como `unverified-source`.
 
 ---
 
-## 🔮 Roadmap Futuro: v2.0 "El Ojo que Todo lo Ve"
+## 📜 El Estándar del Trailer
 
-### El desafío "Proof of Focus"
-En la versión v1.0, Git-Gov valida **"Proof of Human Presence"** (presencia humana). Si juegas videojuegos intensamente, generarás entropía válida para commitear. Esto es "working as intended" para evitar granjas de bots, pero no garantiza que estuviers programando.
+Git-Gov utiliza el estándar de **Git Trailers** para asegurar la compatibilidad universal. La firma es inmutable y viaja con el commit.
 
-### La Meta v2.0
-Implementar **"Proof of Focus"**: que la energía solo cargue cuando la ventana activa sea un IDE o Terminal.
+```git
+commit 9a1b2c3d...
+Author: Jane Doe <jane@example.com>
+Date:   Mon Jan 20 14:00:00 2026 -0300
 
-**¿Por qué necesitamos ayuda?**
-La fragmentación de Linux (X11 vs Wayland) hace que detectar la ventana activa sea un desafío monumental de compatibilidad.
-- **X11**: Trivial (`xprop`).
-- **Wayland**: Complejo (requiere soporte específico de Compositor o Portals).
+    Implement new authentication logic
 
-¡Buscamos contribuidores expertos en Rust + Linux Desktop APIs para construir la capa de visión del Demonio!
+    Signed-off-by: Jane Doe <jane@example.com>
+    Git-Gov-Witness: {"v":2,"focus_min":24,"bursts":12,"sig":"a1b2..."}
+
+```
+
+---
+
+## 🔮 Roadmap
+
+Estamos pivotando activamente hacia la versión 2.0.
+
+* [ ] **Fase 1: El Protocolo (En Progreso)** - Definición del esquema JSON IPC entre IDE y Daemon.
+* [ ] **Fase 2: El Testigo** - Primera extensión oficial para VS Code.
+* [ ] **Fase 3: El Verificador** - GitHub Action para automatizar la revisión de PRs.
 
 ---
 
-## 🏛️ El Veredicto de la Inercia
+## 🤝 Contribuye
 
-Git-Gov no prohíbe la IA. La **regula termodinámicamente**. Si usas IA para generar código, debes pasar el tiempo suficiente curándolo, leyéndolo y refinándolo para cargar la batería necesaria para subirlo. 
+Git-Gov es 100% Open Source y construido en Rust. Buscamos colaboradores que crean en un futuro donde la IA asiste, pero el humano certifica.
 
-**Si no hay sudor, no hay commit.**
+* ¿Eres experto en **VS Code Extensions**?
+* ¿Te apasiona **Rust** y la criptografía?
+
+¡Únete a la discusión en [Issues] o envía un PR!
 
 ---
+
 *Garantizando la soberanía humana en la frontera del bit.*
