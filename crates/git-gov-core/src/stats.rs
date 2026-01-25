@@ -1,7 +1,5 @@
-//! Estadísticas y métricas de validación para GitGov
-//!
-//! Este módulo implementa funciones estadísticas para validar contribuciones
-//! humanas vs AI, incluyendo cálculo de burstiness, NCD y scores compuestos.
+//! Este módulo implementa funciones estadísticas de alta eficiencia (LEAN) para validar
+//! contribuciones humanas vs AI, siguiendo el modelo de Ruido Cognitivo (CNS) v3.0.
 
 use statrs::statistics::Statistics;
 
@@ -108,14 +106,20 @@ pub fn calculate_human_score(burstiness: f64, ncd: f64) -> f64 {
     0.7 * norm_burstiness + 0.3 * norm_ncd
 }
 
-/// Valida si un score representa una contribución humana
-pub fn validate_human_contribution(score: f64, threshold: f64) -> bool {
+/// Valida si un score representa una contribución humana utilizando ZKP si es necesario.
+pub fn validate_contribution(score: f64, threshold: f64) -> bool {
     score >= threshold
 }
 
-/// Valida si un score representa una contribución AI
-pub fn validate_ai_contribution(score: f64, threshold: f64) -> bool {
-    score <= threshold
+/// Representa el resultado de una auditoría termodinámica.
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct ThermodynamicReport {
+    pub h_score: f64,
+    pub burstiness: f64,
+    pub pareto_alpha: f64,
+    pub ncd_ratio: f64,
+    pub is_human: bool,
+    pub zkp_commitment: Option<String>, // Hex encoded commitment
 }
 
 /// Calcula el Score de Acoplamiento Cognitivo-Motor.

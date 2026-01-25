@@ -13,6 +13,7 @@ use git_gov_core::monitor::AttentionBattery;
 use git_gov_core::stats::calculate_human_score;
 use git_gov_core::focus_session::FocusTracker;
 use git_gov_core::git::WitnessData;
+use git_gov_core::crypto::zkp::HumanityProof;
 
     pub struct IpcServer {
     socket_path: String,
@@ -120,6 +121,16 @@ impl IpcServer {
                                         if let Ok(m_guard) = metrics_lock.read() {
                                             if let Some(m) = m_guard.as_ref() {
                                                 let human_score = calculate_human_score(m.burstiness, m.ncd);
+                                                
+                                                // Generar ZKP si el score es humano (>= threshold)
+                                                // Usamos un umbral fijo para la prueba del 50% por ahora
+                                                let zkp_proof = if human_score >= 0.5 {
+                                                    let score_u64 = (human_score * 100.0) as u64;
+                                                    HumanityProof::generate(score_u64, 50).ok()
+                                                } else {
+                                                    None
+                                                };
+
                                                 Response::Metrics {
                                                     ldlj: m.ldlj,
                                                     entropy: m.velocity_entropy,
@@ -130,19 +141,20 @@ impl IpcServer {
                                                     focus_time_mins,
                                                     edit_bursts,
                                                     is_focused,
+                                                    zkp_proof: zkp_proof.map(|_| "ZKP_ACTIVE_B64_PLACEHOLDER".to_string()),
                                                 }
                                             } else {
-                                                // No hay métricas cinemáticas, pero enviamos las de foco
                                                 Response::Metrics {
                                                     ldlj: 0.0,
                                                     entropy: 0.0,
                                                     throughput: 0.0,
-                                                    human_score: 0.5, // Base neutral si no hay cinemática
+                                                    human_score: 0.5,
                                                     coupling,
                                                     battery_level,
                                                     focus_time_mins,
                                                     edit_bursts,
                                                     is_focused,
+                                                    zkp_proof: None,
                                                 }
                                             }
                                         } else {

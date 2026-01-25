@@ -41,6 +41,7 @@ pub enum Response {
         focus_time_mins: f64,
         edit_bursts: usize,
         is_focused: bool,
+        zkp_proof: Option<String>,
     },
     /// Ticket de atención firmado
     Ticket {
