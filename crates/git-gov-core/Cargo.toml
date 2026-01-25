@@ -26,6 +26,13 @@ anyhow = { workspace = true }
 # Randomness for key generation
 rand = "0.8"
 
+# Advanced Crypto v3.0
+bulletproofs = "5.0"
+curve25519-dalek = { workspace = true, features = ["serde", "rand_core"] }
+merlin = { workspace = true }
+tss-esapi = "7.5"
+syn = { version = "2.0", features = ["full"] } # Para análisis sintáctico
+
 # Async runtime and utilities
 tokio = { version = "1.40", features = ["full"] }
 
