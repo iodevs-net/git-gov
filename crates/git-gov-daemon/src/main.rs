@@ -1,8 +1,7 @@
 use anyhow::Result;
 use tokio::sync::{mpsc, watch};
 use tokio_util::sync::CancellationToken;
-use tracing::{info, warn, error};
-use git_gov_core::backend::get_default_backend;
+use tracing::{info, error};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod ipc;
@@ -35,7 +34,7 @@ async fn main() -> Result<()> {
     monitor_config.analysis_interval = std::time::Duration::from_millis(gov_config.monitoring.debounce_window_ms); // Reuse debounce for analysis interval simplification or config
     monitor_config.min_entropy = gov_config.governance.min_entropy;
 
-    let (input_tx, input_rx) = mpsc::channel(monitor_config.mouse_buffer_size);
+    let (_input_tx, input_rx) = mpsc::channel(monitor_config.mouse_buffer_size);
     let (sensor_tx, sensor_rx) = mpsc::channel(100); // Canal para eventos de IDE
     let (file_tx, file_rx) = mpsc::channel(100); 
     let shutdown = CancellationToken::new();
