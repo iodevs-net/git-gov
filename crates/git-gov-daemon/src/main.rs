@@ -40,23 +40,30 @@ async fn main() -> Result<()> {
     let (file_tx, file_rx) = mpsc::channel(100); 
     let shutdown = CancellationToken::new();
 
-    // Start hardware capture backend (Legacy v1.0)
-    if let Some(backend) = get_default_backend() {
-        backend.start(input_tx, shutdown.clone())?;
-        info!("Hardware capture backend started");
-    } else {
-        warn!("No legacy hardware capture backend (evdev) found/enabled");
-    }
-
-    // Start IDE Sensor backend (v2.0)
-    let ide_sensor = git_gov_core::backend::ide_sensor::IdeSensorBackend::new("/tmp/git-gov-sensor.sock");
+    // Start IDE Sensor backend (v2.1 - Primary Source of Truth)
+    // No longer depends on OS hardware capture (evdev).
+    let sensor_socket_path = "/tmp/git-gov-sensor.sock";
+    let ide_sensor = git_gov_core::backend::ide_sensor::IdeSensorBackend::new(sensor_socket_path);
     let ide_sensor_shutdown = shutdown.clone();
+    
+    // Clean up old socket if it exists
+    let _ = std::fs::remove_file(sensor_socket_path);
+
     tokio::spawn(async move {
         if let Err(e) = ide_sensor.start(sensor_tx, ide_sensor_shutdown).await {
-            error!("IDE Sensor backend failed: {}", e);
+            error!("IDE Sensor backend failed (CNS Engine active): {}", e);
         }
     });
-    info!("IDE Sensor backend started (v2.0)");
+    info!("CNS Witness Engine started (Socket: {})", sensor_socket_path);
+
+    // Legacy context: Hardware capture is now deprecated and only for localized testing
+    #[cfg(feature = "legacy-evdev")]
+    {
+        if let Some(backend) = get_default_backend() {
+            backend.start(input_tx, shutdown.clone())?;
+            info!("Legacy hardware capture (v1.0) started as secondary sensor");
+        }
+    }
 
     // Configuración del FileMonitor (Gobernanza de archivos)
     // Convertir de DTO a configuración interna

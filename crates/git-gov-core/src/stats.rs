@@ -12,45 +12,58 @@ pub fn calculate_burstiness(times: &[f64]) -> f64 {
         return 0.0;
     }
     
-    // Calcular intervalos entre eventos (usar valor absoluto para manejar datos no ordenados)
-    let intervals: Vec<f64> = times.windows(2)
-        .map(|w| (w[1] - w[0]).abs())
-        .collect();
-    
-    // Filtrar intervalos que son demasiado pequeños para evitar ruido numérico
-    let filtered_intervals: Vec<f64> = intervals.iter()
-        .filter(|&&x| x > 1e-10)  // Filtrar valores casi cero
-        .cloned()
-        .collect();
-    
-    // Si no hay intervalos válidos después del filtrado, retornar 0
-    if filtered_intervals.is_empty() {
+    let intervals = get_intervals(times);
+    if intervals.is_empty() {
         return 0.0;
     }
     
-    let mean = filtered_intervals.clone().mean();
-    let std_dev = filtered_intervals.std_dev();
+    let mean = intervals.iter().sum::<f64>() / intervals.len() as f64;
+    let std_dev = calculate_std_dev(&intervals, mean);
     
-    // Manejar casos donde mean es muy pequeño o std_dev es cero
-    if mean < 1e-10 {
-        return -1.0; // Máxima regularidad si no hay tiempo transcurrido
+    if mean < 1e-10 || std_dev < 1e-10 {
+        return -1.0;
+    }
+    
+    (std_dev - mean) / (std_dev + mean)
+}
+
+/// Estima el parámetro Alpha de una distribución de Pareto para los intervalos dados
+/// (CNS v2.1 - Informe Omega)
+/// Alpha entre 1.5 y 3.0 suele indicar comportamiento humano fractal
+pub fn estimate_pareto_alpha(times: &[f64]) -> f64 {
+    let intervals = get_intervals(times);
+    if intervals.len() < 5 { // Necesitamos una muestra mínima
+        return 0.0;
     }
 
-    if std_dev < 1e-10 {
-        return -1.0; // Regularidad perfecta
-    }
-    
-    // Burstiness = (std_dev - mean) / (std_dev + mean)
-    // Según Kleinberg et al., este valor está en el rango [-1, 1]
-    // 1: Altamente ráfaga (humano), -1: Completamente regular (máquina)
-    let burstiness = (std_dev - mean) / (std_dev + mean);
-    
-    // Validar que el resultado sea finito
-    if burstiness.is_finite() {
-        burstiness.clamp(-1.0, 1.0)
-    } else {
-        -1.0
-    }
+    let min_x = intervals.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+    if min_x < 1e-10 { return 0.0; }
+
+    // Estimador de Máxima Verosimilitud (MLE) para Alpha
+    let sum_log: f64 = intervals.iter()
+        .map(|&x| (x / min_x).ln())
+        .sum();
+
+    if sum_log < 1e-10 { return 0.0; }
+
+    (intervals.len() as f64) / sum_log
+}
+
+fn get_intervals(times: &[f64]) -> Vec<f64> {
+    times.windows(2)
+        .map(|w| (w[1] - w[0]).abs())
+        .filter(|&x| x > 1e-10)
+        .collect()
+}
+
+fn calculate_std_dev(data: &[f64], mean: f64) -> f64 {
+    let variance = data.iter()
+        .map(|&value| {
+            let diff = mean - value;
+            diff * diff
+        })
+        .sum::<f64>() / data.len() as f64;
+    variance.sqrt()
 }
 
 /// Calcula la distancia de compresión normalizada (NCD) entre dos secuencias
