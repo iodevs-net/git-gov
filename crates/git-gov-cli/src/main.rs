@@ -1,7 +1,10 @@
 use clap::{Parser, Subcommand};
 use git_gov_core::{sentinel_self_check, git::{open_repository}, crypto::generate_keypair};
-use std::process;
+use std::process::{self, Command, Stdio};
 use std::path::Path;
+use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
+use console::{style, Emoji};
+use std::time::Duration;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -14,6 +17,12 @@ struct Cli {
     #[command(subcommand)]
     command: Commands,
 }
+
+static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍  ", "");
+static SPARKLES: Emoji<'_, '_> = Emoji("✨  ", "");
+static GEAR: Emoji<'_, '_> = Emoji("⚙️  ", "");
+static PACKAGE: Emoji<'_, '_> = Emoji("📦  ", "");
+static SUCCESS: Emoji<'_, '_> = Emoji("✅  ", "");
 
 #[derive(Subcommand, Debug)]
 enum Commands {
@@ -90,6 +99,12 @@ enum Commands {
         #[arg(short, long, default_value = "text")]
         format: String,
     },
+    /// Configura el entorno de desarrollo de forma automática y premium
+    Setup {
+        /// Evita la interacción con el usuario
+        #[arg(short, long)]
+        yes: bool,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -105,6 +120,9 @@ async fn main() {
     let cli = Cli::parse();
 
     match cli.command {
+        Commands::Setup { yes } => {
+            run_setup(yes).await;
+        }
         Commands::Report { limit, format } => {
             let repo = match open_repository(Path::new(".")) {
                 Ok(repo) => repo,
@@ -609,4 +627,85 @@ async fn query_daemon(request: git_gov_core::protocol::Request) -> anyhow::Resul
     
     let response: git_gov_core::protocol::Response = serde_json::from_slice(&buffer[..n])?;
     Ok(response)
+}
+async fn run_setup(no_confirm: bool) {
+    println!("\n{} {} {}", style("===").blue(), style("Orquestador Soberano git-gov v2.1").bold(), style("===").blue());
+    println!("{}\n", style("Preparando tu PC para la verdadera Gobernanza de Código...").italic());
+
+    if !no_confirm {
+        println!("Este proceso instalará dependencias de sistema y herramientas globales.");
+        println!("Se requiere acceso de administrador (sudo) para algunos pasos.");
+    }
+
+    let m = MultiProgress::new();
+    let sty = ProgressStyle::with_template("{spinner:.green} [{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
+        .unwrap()
+        .progress_chars("##-");
+
+    // Paso 1: Dependencias de Sistema (APT/Pacman)
+    let pb1 = m.add(ProgressBar::new(1));
+    pb1.set_style(sty.clone());
+    pb1.set_message("Escrutando dependencias del sistema operativo...");
+    
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    pb1.set_message(format!("{} Instalando dependencias base (cmake, ssl, zstd)...", PACKAGE));
+    
+    let mut cmd = if Path::new("/etc/debian_version").exists() {
+        let mut c = Command::new("sudo");
+        c.args(&["apt", "install", "-y", "build-essential", "pkg-config", "libssl-dev", "libzstd-dev", "cmake", "curl", "git"]);
+        c
+    } else {
+        let mut c = Command::new("sudo");
+        c.args(&["pacman", "-S", "--needed", "--noconfirm", "base-devel", "pkgconf", "openssl", "zstd", "cmake", "curl", "git"]);
+        c
+    };
+
+    let status = cmd.stdout(Stdio::null()).stderr(Stdio::null()).status();
+    if status.is_err() || !status.unwrap().success() {
+        pb1.abandon_with_message("❌ Error instalando dependencias de sistema.");
+    } else {
+        pb1.finish_with_message(format!("{} Dependencias de sistema listas.", SUCCESS));
+    }
+
+    // Paso 2: Herramientas Globales de Cargo
+    let tools = vec!["cargo-audit", "cargo-expand", "cargo-nextest"];
+    let pb2 = m.add(ProgressBar::new(tools.len() as u64));
+    pb2.set_style(sty.clone());
+    
+    for tool in tools {
+        pb2.set_message(format!("{} Forjando herramienta: {}...", GEAR, tool));
+        let _ = Command::new("cargo")
+            .args(&["install", tool, "--quiet"])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+        pb2.inc(1);
+    }
+    pb2.finish_with_message(format!("{} Armería de Cargo completa.", SUCCESS));
+
+    // Paso 3: Extensiones de VSCode
+    let exts = vec![
+        "rust-lang.rust-analyzer",
+        "github.copilot",
+        "github.copilot-chat",
+        "vadimcn.vscode-lldb",
+        "serayuzgur.crates",
+        "tamasfe.even-better-toml"
+    ];
+    let pb3 = m.add(ProgressBar::new(exts.len() as u64));
+    pb3.set_style(sty);
+    
+    for ext in exts {
+        pb3.set_message(format!("{} Integrando extensión: {}...", LOOKING_GLASS, ext));
+        let _ = Command::new("code")
+            .args(&["--install-extension", ext, "--force"])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+        pb3.inc(1);
+    }
+    pb3.finish_with_message(format!("{} VSCode Witness habilitado.", SUCCESS));
+
+    println!("\n{} {}", SPARKLES, style("¡Misión cumplida! Tu PC ahora es Soberano.").green().bold());
+    println!("Ejecuta {} para empezar a validar tu entropía.", style("git-gov on").cyan());
 }
