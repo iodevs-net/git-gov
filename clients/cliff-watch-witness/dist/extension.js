@@ -46,18 +46,12 @@ function activate(context) {
         const delta = e.contentChanges.reduce((acc, change) => {
             return acc + (change.text.length - change.rangeLength);
         }, 0);
-        // Si el cambio es masivo (ej. pegado de código), marcamos como potencial no-humano
-        const is_likely_paste = e.contentChanges.some(c => c.text.length > 50);
-        if (delta === 0)
-            return;
-        if (currentEditFile !== e.document.fileName) {
-            flushEditBurst();
-            currentEditFile = e.document.fileName;
-        }
-        editBurstAccumulator += delta;
-        // Enviar evento de tecleo atómico para análisis cinemático
-        // Solo para cambios pequeños (tecleo real)
-        if (delta === 1 && !is_likely_paste) {
+        // CNS v3.0: Detección de Pegado Probable
+        // Si un solo cambio inserta más de 30 caracteres, o si la ráfaga es sospechosamente rápida.
+        const is_likely_paste = e.contentChanges.some(c => c.text.length > 30);
+        // Enviamos evento de tecleo atómico solo si es un cambio pequeño (tecleo real)
+        // para habilitar análisis de latencia física en el Daemon.
+        if (e.contentChanges.length === 1 && e.contentChanges[0].text.length === 1 && !is_likely_paste) {
             sendEvent({
                 type: 'keystroke',
                 file_path: e.document.fileName,
@@ -79,11 +73,13 @@ function activate(context) {
             type: 'edit_burst',
             file_path: currentEditFile,
             chars_delta: editBurstAccumulator,
-            timestamp_ms: Date.now()
+            timestamp_ms: Date.now(),
+            metadata: {
+                is_likely_paste: editBurstAccumulator > 100 // Si la ráfaga acumulada es muy grande
+            }
         };
         sendEvent(event);
         editBurstAccumulator = 0;
-        // Keep file context until switched
     }
     // 2.3 Navigation Tracking
     let lastScrollTime = 0;
@@ -91,19 +87,45 @@ function activate(context) {
         const now = Date.now();
         if (now - lastScrollTime < 1000)
             return; // Throttle 1s
-        const event = {
+        sendEvent({
             type: 'navigation',
             file_path: e.textEditor.document.fileName,
             nav_type: 'scroll',
             timestamp_ms: now
-        };
-        sendEvent(event);
+        });
         lastScrollTime = now;
+    }), 
+    // Detección de Foco de Lectura por Hover
+    vscode.languages.registerHoverProvider('*', {
+        provideHover(document, position, token) {
+            sendEvent({
+                type: 'navigation',
+                file_path: document.fileName,
+                nav_type: 'hover',
+                timestamp_ms: Date.now()
+            });
+            return null; // No interferimos con otros hovers
+        }
     }));
-    // Heartbeat
+    // Detección de Navegación (Go to Definition / Navegación interna)
+    context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((e) => {
+        if (e.kind === vscode.TextEditorSelectionChangeKind.Command) {
+            // Probablemente un comando de navegación (Go to definition, etc)
+            sendEvent({
+                type: 'navigation',
+                file_path: e.textEditor.document.fileName,
+                nav_type: 'go_to_definition',
+                timestamp_ms: Date.now()
+            });
+        }
+    }));
+    // Heartbeat v3.0: Identificamos si el sensor está "vivo" y en qué versión.
     const heartbeatInterval = setInterval(() => {
-        sendEvent({ type: 'heartbeat', timestamp_ms: Date.now() });
-    }, 30000);
+        sendEvent({
+            type: 'heartbeat',
+            timestamp_ms: Date.now()
+        });
+    }, 15000); // 15s para mayor resolución en el Daemon
     context.subscriptions.push({ dispose: () => clearInterval(heartbeatInterval) });
 }
 function deactivate() {
