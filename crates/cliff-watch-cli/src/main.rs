@@ -684,28 +684,30 @@ async fn run_setup(no_confirm: bool) {
     }
     pb2.finish_with_message(format!("{} Armería de Cargo completa.", SUCCESS));
 
-    // Paso 3: Extensiones de VSCode
-    let exts = vec![
-        "rust-lang.rust-analyzer",
-        "github.copilot",
-        "github.copilot-chat",
-        "vadimcn.vscode-lldb",
-        "serayuzgur.crates",
-        "tamasfe.even-better-toml"
-    ];
-    let pb3 = m.add(ProgressBar::new(exts.len() as u64));
+    // Paso 3: Extensiones de VSCode (Modo Soberano)
+    let pb3 = m.add(ProgressBar::new(1));
     pb3.set_style(sty);
-    
-    for ext in exts {
-        pb3.set_message(format!("{} Integrando extensión: {}...", LOOKING_GLASS, ext));
+    pb3.set_message(format!("{} Forjando el Testigo (VSIX local)...", LOOKING_GLASS));
+
+    // Intentar instalar VSCode extension localmente
+    let vsix_built = Command::new("sh")
+        .arg("-c")
+        .arg("cd clients/cliff-watch-witness && npm install && npx vsce package --out ../../cliff-watch-witness.vsix --no-interaction")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
+
+    if vsix_built.is_ok() && vsix_built.unwrap().success() {
+        pb3.set_message(format!("{} Instalando Testigo Soberano...", SUCCESS));
         let _ = Command::new("code")
-            .args(&["--install-extension", ext, "--force"])
+            .args(&["--install-extension", "cliff-watch-witness.vsix", "--force"])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .status();
-        pb3.inc(1);
+        pb3.finish_with_message(format!("{} Cliff-Watch Witness activado (Local).", SUCCESS));
+    } else {
+        pb3.abandon_with_message("⚠️ Error al forjar el Testigo local. Intenta manualmente con 'cliff-watch setup'.");
     }
-    pb3.finish_with_message(format!("{} VSCode Witness habilitado.", SUCCESS));
 
     println!("\n{} {}", SPARKLES, style("¡Misión cumplida! Tu PC ahora es Soberano.").green().bold());
     println!("Ejecuta {} para empezar a validar tu entropía.", style("cliff-watch on").cyan());

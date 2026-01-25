@@ -9,7 +9,7 @@
   "description": "The Sovereign Witness - Proof of Human Work (PoHW) & Focus Sensor",
   "version": "0.1.0",
   "engines": {
-    "vscode": "^1.85.0"
+    "vscode": "^1.108.1"
   },
   "categories": [
     "Other"
