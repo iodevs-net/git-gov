@@ -73,7 +73,7 @@ fi
 cliff-craft verify-work
 if [ $? -ne 0 ]; then
     echo "--------------------------------------------------------"
-    echo "❌ ERROR: ADUANA TERMODINÁMICA DE GIT-GOV"
+    echo "❌ ERROR: ADUANA TERMODINÁMICA DE CLIFF-CRAFT"
     echo "Tu reserva de energía kinética es insuficiente para"
     echo "la complejidad de este código. Dedica más tiempo a la"
     echo "curaduría manual antes de intentar commitear."

@@ -58,8 +58,8 @@ impl GovConfig {
             .add_source(File::with_name("cliff-craft").required(false))
             // Global config
             .add_source(File::with_name(&format!("{}/.config/cliff-craft/config", std::env::var("HOME").unwrap_or_else(|_| ".".into()))).required(false))
-            // Env vars: GIT_GOV_GOVERNANCE_MIN_ENTROPY
-            .add_source(Environment::with_prefix("GIT_GOV").separator("__"));
+            // Env vars: CLIFF_CRAFT_GOVERNANCE_MIN_ENTROPY
+            .add_source(Environment::with_prefix("CLIFF_CRAFT").separator("__"));
 
         builder.build()?.try_deserialize()
     }

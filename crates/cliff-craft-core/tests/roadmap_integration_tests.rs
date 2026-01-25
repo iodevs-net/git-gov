@@ -527,7 +527,7 @@ fn generate_integration_test_report() {
         .filter(|r| r.metrics.as_ref().and_then(|m| m.human_score).is_some())
         .count() as f64;
     
-    println!("\n=== GIT-GOV INTEGRATION TEST REPORT ===");
+    println!("\n=== CLIFF-CRAFT INTEGRATION TEST REPORT ===");
     println!("Tests Passed: {}/{}", passed_count, total_count);
     println!("Pass Rate: {:.1}%", pass_rate);
     println!("Average Metrics:");
