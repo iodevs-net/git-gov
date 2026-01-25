@@ -652,11 +652,11 @@ async fn run_setup(no_confirm: bool) {
     
     let mut cmd = if Path::new("/etc/debian_version").exists() {
         let mut c = Command::new("sudo");
-        c.args(&["apt", "install", "-y", "build-essential", "pkg-config", "libssl-dev", "libzstd-dev", "cmake", "curl", "git"]);
+        c.args(&["apt", "install", "-y", "build-essential", "pkg-config", "libssl-dev", "libzstd-dev", "libtss2-dev", "cmake", "curl", "git"]);
         c
     } else {
         let mut c = Command::new("sudo");
-        c.args(&["pacman", "-S", "--needed", "--noconfirm", "base-devel", "pkgconf", "openssl", "zstd", "cmake", "curl", "git"]);
+        c.args(&["pacman", "-S", "--needed", "--noconfirm", "base-devel", "pkgconf", "openssl", "zstd", "tpm2-tss", "cmake", "curl", "git"]);
         c
     };
 
