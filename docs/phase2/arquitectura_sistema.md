@@ -1,23 +1,23 @@
-# Arquitectura del Sistema git-gov
+# Arquitectura del Sistema cliff-craft
 
 ## 1. Introducción
-Este documento detalla la arquitectura del sistema git-gov, incluyendo diagramas de componentes, interacciones entre módulos y diseño de la solución.
+Este documento detalla la arquitectura del sistema cliff-craft, incluyendo diagramas de componentes, interacciones entre módulos y diseño de la solución.
 
 ## 2. Visión General de la Arquitectura
 
 ### 2.1 Componentes Principales
-El sistema git-gov se compone de tres módulos principales:
+El sistema cliff-craft se compone de tres módulos principales:
 
-1. **git-gov-core**: Lógica central para el cálculo de métricas y criptografía.
-2. **git-gov-cli**: Interfaz de línea de comandos para interactuar con el sistema.
-3. **git-gov-daemon**: Proceso en segundo plano que monitorea la actividad de edición.
+1. **cliff-craft-core**: Lógica central para el cálculo de métricas y criptografía.
+2. **cliff-craft-cli**: Interfaz de línea de comandos para interactuar con el sistema.
+3. **cliff-craft-daemon**: Proceso en segundo plano que monitorea la actividad de edición.
 
 ### 2.2 Diagrama de Arquitectura
 
 ```mermaid
 graph TD
-    A[git-gov-cli] -->|Comandos| B[git-gov-core]
-    B -->|Lógica de Negocio| C[git-gov-daemon]
+    A[cliff-craft-cli] -->|Comandos| B[cliff-craft-core]
+    B -->|Lógica de Negocio| C[cliff-craft-daemon]
     C -->|Monitoreo| D[Sistema de Archivos]
     C -->|Eventos| E[Git Repositorio]
     B -->|Integración| E
@@ -25,7 +25,7 @@ graph TD
 
 ## 3. Diseño de Módulos
 
-### 3.1 git-gov-core
+### 3.1 cliff-craft-core
 
 #### 3.1.1 Responsabilidades
 - Cálculo de métricas de entropía y burstiness.
@@ -83,10 +83,10 @@ graph TD
   - Análisis de distribuciones.
   - Cálculo de métricas de burstiness.
 
-### 3.2 git-gov-cli
+### 3.2 cliff-craft-cli
 
 #### 3.2.1 Responsabilidades
-- Proporcionar una interfaz de línea de comandos para interactuar con git-gov.
+- Proporcionar una interfaz de línea de comandos para interactuar con cliff-craft.
 - Ejecutar comandos como `init`, `verify`, `daemon`, y `SystemCheck`.
 - Manejo de argumentos y opciones de línea de comandos.
 
@@ -94,7 +94,7 @@ graph TD
 
 ##### 3.2.2.1 main.rs
 - **Responsabilidad**: Punto de entrada de la CLI.
-- **Dependencias**: `clap`, `git-gov-core`.
+- **Dependencias**: `clap`, `cliff-craft-core`.
 - **Funciones Principales**:
   - Parsing de argumentos.
   - Ejecución de comandos.
@@ -102,26 +102,26 @@ graph TD
 
 ##### 3.2.2.2 commands/
 - **Responsabilidad**: Implementación de subcomandos.
-- **Dependencias**: `clap`, `git-gov-core`, `anyhow`.
+- **Dependencias**: `clap`, `cliff-craft-core`, `anyhow`.
 - **Funciones Principales**:
   - Implementación de `init`.
   - Implementación de `verify`.
   - Implementación de `daemon`.
   - Implementación de `SystemCheck`.
 
-### 3.3 git-gov-daemon
+### 3.3 cliff-craft-daemon
 
 #### 3.3.1 Responsabilidades
 - Ejecutar como un proceso en segundo plano.
 - Monitorear eventos de edición en tiempo real.
 - Calcular métricas de actividad.
-- Comunicarse con git-gov-core para generar metadatos de procedencia.
+- Comunicarse con cliff-craft-core para generar metadatos de procedencia.
 
 #### 3.3.2 Submódulos
 
 ##### 3.3.2.1 main.rs
 - **Responsabilidad**: Punto de entrada del daemon.
-- **Dependencias**: `git-gov-core`, `ctrlc`.
+- **Dependencias**: `cliff-craft-core`, `ctrlc`.
 - **Funciones Principales**:
   - Inicialización del daemon.
   - Manejo de señales de interrupción.
@@ -129,7 +129,7 @@ graph TD
 
 ##### 3.3.2.2 ipc.rs
 - **Responsabilidad**: Comunicación inter-procesos.
-- **Dependencias**: `git-gov-core`.
+- **Dependencias**: `cliff-craft-core`.
 - **Funciones Principales**:
   - Manejo de sockets de dominio Unix (macOS/Linux).
   - Manejo de named pipes (Windows).
@@ -142,13 +142,13 @@ graph TD
 ```mermaid
 sequenceDiagram
     participant U as Usuario
-    participant C as git-gov-cli
-    participant B as git-gov-core
-    participant D as git-gov-daemon
+    participant C as cliff-craft-cli
+    participant B as cliff-craft-core
+    participant D as cliff-craft-daemon
     participant G as Git
     participant F as Sistema de Archivos
 
-    U->>C: Ejecuta comando (e.g., git-gov init)
+    U->>C: Ejecuta comando (e.g., cliff-craft init)
     C->>B: Invoca lógica de negocio
     B->>G: Interactúa con repositorio Git
     B-->>C: Retorna resultado
@@ -175,7 +175,7 @@ El Mouse Sentinel es un módulo de telemetría cinemática diseñado para distin
 graph TD
     A[Mouse Sentinel] -->|Eventos| B[Buffer Circular Efímero]
     B -->|Datos| C[Hilo de Análisis]
-    C -->|Métricas| D[git-gov-core]
+    C -->|Métricas| D[cliff-craft-core]
     D -->|Provenance| E[Git Trailer]
 ```
 
@@ -235,4 +235,4 @@ Date:   Mon Jan 1 00:00:00 2024 +0000
 - **Resultado**: Confirmación de la arquitectura y ajustes necesarios.
 
 ## 8. Conclusión
-Este documento detalla la arquitectura del sistema git-gov, asegurando que el diseño cumpla con los principios DRY, LEAN y SOLID. La arquitectura propuesta proporciona una base sólida para la implementación del sistema, garantizando la estabilidad, seguridad y eficiencia del mismo.
+Este documento detalla la arquitectura del sistema cliff-craft, asegurando que el diseño cumpla con los principios DRY, LEAN y SOLID. La arquitectura propuesta proporciona una base sólida para la implementación del sistema, garantizando la estabilidad, seguridad y eficiencia del mismo.

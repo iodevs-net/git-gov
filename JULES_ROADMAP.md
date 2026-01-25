@@ -1,11 +1,11 @@
-# Jules Roadmap: Git-Gov Witness (VS Code Extension) 🛡️🧠
+# Jules Roadmap: Cliff-Craft Witness (VS Code Extension) 🛡️🧠
 
-Este roadmap define el plan de ejecución atómico para implementar la extensión de VS Code que actúa como sensor de foco para Git-Gov.
+Este roadmap define el plan de ejecución atómico para implementar la extensión de VS Code que actúa como sensor de foco para Cliff-Craft.
 
 ## Contexto Técnico
-- **Backend**: Daemon en Rust escuchando en `/tmp/git-gov-sensor.sock` (Unix Domain Socket).
+- **Backend**: Daemon en Rust escuchando en `/tmp/cliff-craft-sensor.sock` (Unix Domain Socket).
 - **Frontend**: Extensión VS Code (TypeScript).
-- **Protocolo**: [focus_protocol.rs](git-gov/crates/git-gov-core/src/focus_protocol.rs) (Fuente de verdad).
+- **Protocolo**: [focus_protocol.rs](cliff-craft/crates/cliff-craft-core/src/focus_protocol.rs) (Fuente de verdad).
 
 ---
 
@@ -56,7 +56,7 @@ export type SensorEvent =
 ## Fase 3: Transporte (The Pipe)
 
 ### 3.1 Unix Socket Client
-- [ ] Usar `net.createConnection({ path: '/tmp/git-gov-sensor.sock' })`.
+- [ ] Usar `net.createConnection({ path: '/tmp/cliff-craft-sensor.sock' })`.
 - [ ] **Nota**: Aunque el prompt inicial mencionaba HTTP, hemos decidido usar **Unix Sockets** directamente por razones de seguridad, privacidad y menor latencia. Evita levantar servidores HTTP innecesarios.
 - [ ] Implementar reconexión automática (exponential backoff).
 - [ ] Fallos silenciosos: Si el daemon no está, la extensión sigue funcionando sin molestar al usuario.
@@ -78,4 +78,4 @@ export type SensorEvent =
 
 ## Cómo Validar tu Progreso (Jules):
 1. `npm test` debe ejecutar la suite de `fast-check` con 10,000 runs sin fallos.
-2. Al abrir VS Code en el repo de `git-gov`, `nc -l -U /tmp/git-gov-sensor.sock` debe mostrar el flujo de JSONs correcto.
+2. Al abrir VS Code en el repo de `cliff-craft`, `nc -l -U /tmp/cliff-craft-sensor.sock` debe mostrar el flujo de JSONs correcto.

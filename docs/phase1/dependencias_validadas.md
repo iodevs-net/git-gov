@@ -1,7 +1,7 @@
-# Dependencias Validadas para git-gov
+# Dependencias Validadas para cliff-craft
 
 ## 1. Introducción
-Este documento detalla las dependencias críticas del proyecto git-gov, validando su compatibilidad, seguridad y versión específica para garantizar la estabilidad del sistema.
+Este documento detalla las dependencias críticas del proyecto cliff-craft, validando su compatibilidad, seguridad y versión específica para garantizar la estabilidad del sistema.
 
 ## 2. Dependencias Principales
 
@@ -15,7 +15,7 @@ Este documento detalla las dependencias críticas del proyecto git-gov, validand
 - **clap**: Versión 4.5.4
   - **Descripción**: Librería para el manejo de argumentos de línea de comandos.
   - **Validación**: Compatible con Rust 1.70+, sin vulnerabilidades conocidas.
-  - **Uso**: Implementación de comandos como `git-gov init`, `git-gov verify`, y `git-gov daemon`.
+  - **Uso**: Implementación de comandos como `cliff-craft init`, `cliff-craft verify`, y `cliff-craft daemon`.
 
 #### 2.2.2 Interacción con Git
 - **git2**: Versión 0.20.0
@@ -77,7 +77,7 @@ Este documento detalla las dependencias críticas del proyecto git-gov, validand
 - **thiserror**: Versión 2.0.0
   - **Descripción**: Librería para definición de tipos de error personalizados en Rust.
   - **Validación**: Compatible con Rust 1.70+, sin vulnerabilidades conocidas.
-  - **Uso**: Definición de errores específicos del dominio en `git-gov-core`.
+  - **Uso**: Definición de errores específicos del dominio en `cliff-craft-core`.
 
 - **chrono**: Versión 0.4.35
   - **Descripción**: Librería para manejo de fechas y horas en Rust.
@@ -140,18 +140,18 @@ Todas las dependencias han sido validadas utilizando las siguientes herramientas
 ```toml
 [workspace]
 members = [
-    "crates/git-gov-core",
-    "crates/git-gov-cli",
-    "crates/git-gov-daemon",
+    "crates/cliff-craft-core",
+    "crates/cliff-craft-cli",
+    "crates/cliff-craft-daemon",
 ]
 resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-authors = ["git-gov team"]
+authors = ["cliff-craft team"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/git-gov/git-gov"
+repository = "https://github.com/cliff-craft/cliff-craft"
 
 [workspace.dependencies]
 clap = { version = "4.5", features = ["derive", "string", "env"] }
@@ -181,4 +181,4 @@ strip = true
 ```
 
 ## 7. Conclusión
-Este documento valida las dependencias críticas para el proyecto git-gov, asegurando que todas las librerías sean compatibles, seguras y estén optimizadas para el rendimiento. La configuración del workspace garantiza la coherencia y la eficiencia en la gestión de dependencias, adheriéndose a los principios DRY, LEAN y SOLID.
+Este documento valida las dependencias críticas para el proyecto cliff-craft, asegurando que todas las librerías sean compatibles, seguras y estén optimizadas para el rendimiento. La configuración del workspace garantiza la coherencia y la eficiencia en la gestión de dependencias, adheriéndose a los principios DRY, LEAN y SOLID.

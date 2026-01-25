@@ -1,12 +1,12 @@
-# Estructura del Proyecto git-gov
+# Estructura del Proyecto cliff-craft
 
 ## 1. Introducción
-Este documento describe la estructura del proyecto git-gov, incluyendo la organización de directorios, archivos y módulos, asegurando la adherencia a los principios DRY, LEAN y SOLID.
+Este documento describe la estructura del proyecto cliff-craft, incluyendo la organización de directorios, archivos y módulos, asegurando la adherencia a los principios DRY, LEAN y SOLID.
 
 ## 2. Estructura de Directorios
 
 ```
-git-gov/
+cliff-craft/
 ├── Cargo.toml                  # Workspace manifest
 ├── Cargo.lock                  # Locked dependencies
 ├── Makefile                    # Automation for cross-compilation and installation
@@ -24,7 +24,7 @@ git-gov/
 │   │   └── dry_lean_solid.md
 │   └── estructura_proyecto.md
 ├── crates/
-│   ├── git-gov-core/
+│   ├── cliff-craft-core/
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs
@@ -35,12 +35,12 @@ git-gov/
 │   │       ├── monitor.rs
 │   │       ├── provenance.rs
 │   │       └── stats.rs
-│   ├── git-gov-cli/
+│   ├── cliff-craft-cli/
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── main.rs
 │   │       └── commands/
-│   └── git-gov-daemon/
+│   └── cliff-craft-daemon/
 │       ├── Cargo.toml
 │       └── src/
 │           ├── main.rs
@@ -96,17 +96,17 @@ git-gov/
 
 ### 3.3 Módulos de Rust
 
-#### 3.3.1 crates/git-gov-core/
+#### 3.3.1 crates/cliff-craft-core/
 - **Descripción**: Lógica central del sistema.
 - **Contenido**:
   - Módulos para criptografía, entropía, Git, monitoreo, procedencia y estadísticas.
 
-#### 3.3.2 crates/git-gov-cli/
+#### 3.3.2 crates/cliff-craft-cli/
 - **Descripción**: Interfaz de línea de comandos.
 - **Contenido**:
   - Punto de entrada de la CLI y subcomandos.
 
-#### 3.3.3 crates/git-gov-daemon/
+#### 3.3.3 crates/cliff-craft-daemon/
 - **Descripción**: Proceso en segundo plano.
 - **Contenido**:
   - Punto de entrada del daemon y comunicación inter-procesos.
@@ -124,18 +124,18 @@ git-gov/
 ```toml
 [workspace]
 members = [
-    "crates/git-gov-core",
-    "crates/git-gov-cli",
-    "crates/git-gov-daemon",
+    "crates/cliff-craft-core",
+    "crates/cliff-craft-cli",
+    "crates/cliff-craft-daemon",
 ]
 resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-authors = ["git-gov team"]
+authors = ["cliff-craft team"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/git-gov/git-gov"
+repository = "https://github.com/cliff-craft/cliff-craft"
 
 [workspace.dependencies]
 clap = { version = "4.5", features = ["derive", "string", "env"] }
@@ -172,12 +172,12 @@ strip = true
 
 ## 5. Módulos de Rust
 
-### 5.1 git-gov-core
+### 5.1 cliff-craft-core
 
 #### 5.1.1 Cargo.toml
 ```toml
 [package]
-name = "git-gov-core"
+name = "cliff-craft-core"
 version.workspace = true
 edition.workspace = true
 description = "Core logic for Decentralized Code Governance metrics and crypto."
@@ -206,18 +206,18 @@ pub mod provenance;
 pub mod stats;
 ```
 
-### 5.2 git-gov-cli
+### 5.2 cliff-craft-cli
 
 #### 5.2.1 Cargo.toml
 ```toml
 [package]
-name = "git-gov"
+name = "cliff-craft"
 version.workspace = true
 edition.workspace = true
-default-run = "git-gov"
+default-run = "cliff-craft"
 
 [dependencies]
-git-gov-core = { workspace = true }
+cliff-craft-core = { workspace = true }
 clap = { workspace = true }
 anyhow = { workspace = true }
 ```
@@ -225,11 +225,11 @@ anyhow = { workspace = true }
 #### 5.2.2 src/main.rs
 ```rust
 use clap::{Parser, Subcommand};
-use git_gov_core::sentinel_self_check;
+use cliff_craft_core::sentinel_self_check;
 use std::process::ExitCode;
 
 #[derive(Parser)]
-#[command(name = "git-gov")]
+#[command(name = "cliff-craft")]
 #[command(version)]
 #[command(propagate_version = true)]
 struct Cli {
@@ -265,24 +265,24 @@ fn main() -> ExitCode {
 }
 ```
 
-### 5.3 git-gov-daemon
+### 5.3 cliff-craft-daemon
 
 #### 5.3.1 Cargo.toml
 ```toml
 [package]
-name = "git-gov-daemon"
+name = "cliff-craft-daemon"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-git-gov-core = { workspace = true }
+cliff-craft-core = { workspace = true }
 anyhow = { workspace = true }
 ctrlc = "3.4"
 ```
 
 #### 5.3.2 src/main.rs
 ```rust
-use git_gov_core::monitor::start_monitoring;
+use cliff_craft_core::monitor::start_monitoring;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -317,4 +317,4 @@ echo "Hooks instalados correctamente."
 ```
 
 ## 7. Conclusión
-Este documento describe la estructura del proyecto git-gov, asegurando que el diseño cumpla con los principios DRY, LEAN y SOLID. La estructura propuesta proporciona una base sólida para la implementación del sistema, garantizando la estabilidad, seguridad y eficiencia del mismo.
+Este documento describe la estructura del proyecto cliff-craft, asegurando que el diseño cumpla con los principios DRY, LEAN y SOLID. La estructura propuesta proporciona una base sólida para la implementación del sistema, garantizando la estabilidad, seguridad y eficiencia del mismo.

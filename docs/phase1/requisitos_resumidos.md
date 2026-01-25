@@ -1,15 +1,15 @@
-# Requisitos Clave Resumidos para git-gov
+# Requisitos Clave Resumidos para cliff-craft
 
 ## 1. Contexto y Objetivo
 - **Crisis de Entropía**: La generación de código mediante IA ha reducido la barrera de entrada para contribuir código, lo que ha llevado a una crisis de entropía en el ecosistema de software de código abierto.
-- **Objetivo**: Implementar un sistema de gobernanza de código descentralizado (DCG) llamado `git-gov` que certifique la autenticidad de las contribuciones humanas.
+- **Objetivo**: Implementar un sistema de gobernanza de código descentralizado (DCG) llamado `cliff-craft` que certifique la autenticidad de las contribuciones humanas.
 
 ## 2. Arquitectura del Sistema
 - **Sentinel Protocol**: Un protocolo basado en la física de la información para verificar la autenticidad de las contribuciones.
 - **Componentes Principales**:
-  - **git-gov-core**: Lógica central para el cálculo de métricas y criptografía.
-  - **git-gov-cli**: Interfaz de línea de comandos para interactuar con el sistema.
-  - **git-gov-daemon**: Proceso en segundo plano que monitorea la actividad de edición.
+  - **cliff-craft-core**: Lógica central para el cálculo de métricas y criptografía.
+  - **cliff-craft-cli**: Interfaz de línea de comandos para interactuar con el sistema.
+  - **cliff-craft-daemon**: Proceso en segundo plano que monitorea la actividad de edición.
 
 ## 3. Métricas Clave
 - **Burstiness (B)**: Mide la variabilidad en los tiempos de edición para distinguir entre patrones humanos y de máquina.
@@ -31,7 +31,7 @@
   - `serde` y `serde_json`: Para la serialización de datos.
 
 ## 5. Estructura del Proyecto
-- **Workspace de Cargo**: El proyecto debe organizarse como un workspace de Cargo con tres crates principales: `git-gov-core`, `git-gov-cli`, y `git-gov-daemon`.
+- **Workspace de Cargo**: El proyecto debe organizarse como un workspace de Cargo con tres crates principales: `cliff-craft-core`, `cliff-craft-cli`, y `cliff-craft-daemon`.
 - **Configuración**: Cada crate debe tener una configuración específica para optimizar el tamaño del binario y la eficiencia.
 
 ## 6. Funcionalidades Principales
@@ -55,9 +55,9 @@
 
 ## 10. Pasos Siguientes
 - Implementar la estructura del workspace de Cargo.
-- Desarrollar los módulos principales en `git-gov-core`.
-- Implementar la interfaz de línea de comandos en `git-gov-cli`.
-- Desarrollar el daemon de monitoreo en `git-gov-daemon`.
+- Desarrollar los módulos principales en `cliff-craft-core`.
+- Implementar la interfaz de línea de comandos en `cliff-craft-cli`.
+- Desarrollar el daemon de monitoreo en `cliff-craft-daemon`.
 - Realizar pruebas exhaustivas y validar la funcionalidad del sistema.
 
-Este documento sirve como guía para la implementación del sistema `git-gov` y debe ser actualizado a medida que avanza el desarrollo.
+Este documento sirve como guía para la implementación del sistema `cliff-craft` y debe ser actualizado a medida que avanza el desarrollo.

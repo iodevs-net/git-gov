@@ -1,4 +1,4 @@
-# Resumen de Resultados de Pruebas - git-gov
+# Resumen de Resultados de Pruebas - cliff-craft
 
 ## Fecha de Ejecución
 20 de enero de 2026
@@ -96,4 +96,4 @@ Se detectaron varias advertencias que deben ser abordadas:
 
 ## Conclusión
 
-El proyecto git-gov muestra una buena base de pruebas con un 92.86% de éxito. El único fallo crítico está en el módulo git y debe ser abordado prioritariamente. Las advertencias del compilador indican oportunidades para mejorar la calidad del código. Se recomienda implementar las correcciones inmediatas y planificar las mejoras a largo plazo para alcanzar una cobertura del 100% y una base de código más robusta.
+El proyecto cliff-craft muestra una buena base de pruebas con un 92.86% de éxito. El único fallo crítico está en el módulo git y debe ser abordado prioritariamente. Las advertencias del compilador indican oportunidades para mejorar la calidad del código. Se recomienda implementar las correcciones inmediatas y planificar las mejoras a largo plazo para alcanzar una cobertura del 100% y una base de código más robusta.

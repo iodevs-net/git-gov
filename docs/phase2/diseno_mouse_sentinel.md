@@ -1,7 +1,7 @@
-# Diseño del Mouse Sentinel para git-gov
+# Diseño del Mouse Sentinel para cliff-craft
 
 ## 1. Introducción
-Este documento detalla el diseño técnico del módulo Mouse Sentinel, un componente crítico de git-gov que implementa telemetría cinemática para distinguir entre movimientos humanos y sintéticos del ratón.
+Este documento detalla el diseño técnico del módulo Mouse Sentinel, un componente crítico de cliff-craft que implementa telemetría cinemática para distinguir entre movimientos humanos y sintéticos del ratón.
 
 ## 2. Visión General
 
@@ -21,7 +21,7 @@ El Mouse Sentinel tiene como objetivo transformar el ratón en un oráculo cript
 graph TD
     A[Mouse Sentinel] -->|Eventos| B[Buffer Circular Efímero]
     B -->|Datos| C[Hilo de Análisis]
-    C -->|Métricas| D[git-gov-core]
+    C -->|Métricas| D[cliff-craft-core]
     D -->|Provenance| E[Git Trailer]
 ```
 
@@ -190,13 +190,13 @@ En Linux, el Mouse Sentinel utiliza `evdev` para acceso directo al kernel, eludi
 ### 6.1 Sockets de Dominio Unix (macOS/Linux)
 - **Descripción**: Comunicación mediante sockets de dominio Unix.
 - **Implementación**:
-  - Creación de socket en `/tmp/git-gov.sock`.
+  - Creación de socket en `/tmp/cliff-craft.sock`.
   - Manejo de mensajes JSON.
 
 ### 6.2 Named Pipes (Windows)
 - **Descripción**: Comunicación mediante named pipes.
 - **Implementación**:
-  - Creación de pipe en `\.\pipe\git-gov`.
+  - Creación de pipe en `\.\pipe\cliff-craft`.
   - Manejo de mensajes JSON.
 
 ## 7. Estructura del Manifiesto JSON
@@ -237,4 +237,4 @@ En Linux, el Mouse Sentinel utiliza `evdev` para acceso directo al kernel, eludi
 - **Resultado**: Confirmación de la arquitectura y ajustes necesarios.
 
 ## 9. Conclusión
-Este documento detalla el diseño del Mouse Sentinel para git-gov, asegurando que el módulo cumpla con los principios de privacidad, precisión y compatibilidad. La arquitectura propuesta proporciona una base sólida para la implementación del sistema, garantizando la estabilidad, seguridad y eficiencia del mismo.
+Este documento detalla el diseño del Mouse Sentinel para cliff-craft, asegurando que el módulo cumpla con los principios de privacidad, precisión y compatibilidad. La arquitectura propuesta proporciona una base sólida para la implementación del sistema, garantizando la estabilidad, seguridad y eficiencia del mismo.

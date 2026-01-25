@@ -1,7 +1,7 @@
 #!/bin/bash
-# git-gov Seed Bootstrap v2.1
+# cliff-craft Seed Bootstrap v2.1
 set -e
-echo "🌱 Sembrando el Centinela (git-gov)..."
+echo "🌱 Sembrando el Centinela (cliff-craft)..."
 
 # 1. Asegurar Rust
 if ! command -v rustup &> /dev/null; then

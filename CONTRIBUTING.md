@@ -1,8 +1,8 @@
-# Contributing to Git-Gov
+# Contributing to Cliff-Craft
 
 ## Testing Localmente
 
-Para probar Git-Gov en tus propios repositorios ("Dogfooding"):
+Para probar Cliff-Craft en tus propios repositorios ("Dogfooding"):
 
 1.  **Compilar Release:**
     ```bash
@@ -17,7 +17,7 @@ Para probar Git-Gov en tus propios repositorios ("Dogfooding"):
 3.  **Inicializar en otro repo:**
     ```bash
     cd /path/to/other/repo
-    git-gov init
+    cliff-craft init
     ```
 
 ## Desarrollo

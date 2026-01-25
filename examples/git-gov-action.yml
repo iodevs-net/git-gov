@@ -1,4 +1,4 @@
-name: Git-Gov Verification
+name: Cliff-Craft Verification
 
 on:
   pull_request:
@@ -16,7 +16,7 @@ jobs:
       with:
         fetch-depth: 0 # Important: Fetch full history for proper verification
 
-    # TODO: Replace with official setup-git-gov action when available
+    # TODO: Replace with official setup-cliff-craft action when available
     # For now, we assume the binary is available or built here
     # This example shows how to use it if installed
     
@@ -24,14 +24,14 @@ jobs:
       id: verify
       shell: bash
       run: |
-        # In a real workflow, ensure git-gov is installed in PATH
-        # ./target/release/git-gov verify HEAD --format json > verification.json
+        # In a real workflow, ensure cliff-craft is installed in PATH
+        # ./target/release/cliff-craft verify HEAD --format json > verification.json
         
         # Example output simulation/usage
         echo "Verifying commit $(git rev-parse HEAD)..."
         
         # Uncomment when running with actual binary:
-        # OUTPUT=$(git-gov verify HEAD --format json)
+        # OUTPUT=$(cliff-craft verify HEAD --format json)
         # echo "Raw Output: $OUTPUT"
         # STATUS=$(echo "$OUTPUT" | jq -r '.status')
         # if [ "$STATUS" != "verified" ]; then

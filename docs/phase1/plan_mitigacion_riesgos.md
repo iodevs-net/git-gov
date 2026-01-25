@@ -1,7 +1,7 @@
-# Plan de Mitigación de Riesgos para git-gov
+# Plan de Mitigación de Riesgos para cliff-craft
 
 ## 1. Introducción
-Este documento identifica los riesgos potenciales para el proyecto git-gov y propone estrategias de mitigación para cada uno, asegurando la estabilidad y éxito del proyecto.
+Este documento identifica los riesgos potenciales para el proyecto cliff-craft y propone estrategias de mitigación para cada uno, asegurando la estabilidad y éxito del proyecto.
 
 ## 2. Riesgos Identificados y Mitigaciones
 
@@ -128,4 +128,4 @@ Este documento identifica los riesgos potenciales para el proyecto git-gov y pro
 - Proporcionar actualizaciones regulares sobre el estado del proyecto.
 
 ## 4. Conclusión
-Este plan de mitigación de riesgos proporciona un marco para identificar, evaluar y mitigar los riesgos potenciales del proyecto git-gov. La implementación de estas estrategias asegurará la estabilidad, seguridad y éxito del sistema, adheriéndose a los principios DRY, LEAN y SOLID.
+Este plan de mitigación de riesgos proporciona un marco para identificar, evaluar y mitigar los riesgos potenciales del proyecto cliff-craft. La implementación de estas estrategias asegurará la estabilidad, seguridad y éxito del sistema, adheriéndose a los principios DRY, LEAN y SOLID.

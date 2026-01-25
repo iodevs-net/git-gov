@@ -1,4 +1,4 @@
-# DEEP RESEARCH OMEGA: git-gov v2.1 — MASTERPIECE OF IMPLEMENTATION
+# DEEP RESEARCH OMEGA: cliff-craft v2.1 — MASTERPIECE OF IMPLEMENTATION
 
 ## SECTION 1: EXECUTIVE SYNTHESIS (THE BLUFF)
 
@@ -89,9 +89,9 @@ struct FocusCredential {
 
 // Component 3: Commit Wrapper (Git Trailer)
 // Added to every commit message:
-// Git-Gov-Witness: <base64_encoded_cnstyle_credential>
-// Git-Gov-Signature: <signature_of_commit_hash>
-// Git-Gov-Entropy-Score: <0-100>
+// Cliff-Craft-Witness: <base64_encoded_cnstyle_credential>
+// Cliff-Craft-Signature: <signature_of_commit_hash>
+// Cliff-Craft-Entropy-Score: <0-100>
 ```
 
 **Installation Footprint:**
@@ -100,8 +100,8 @@ struct FocusCredential {
 # Installation time: 30 seconds
 # No daemon. No sudo. No compilation.
 
-git clone https://github.com/ionet/git-gov
-cd git-gov
+git clone https://github.com/ionet/cliff-craft
+cd cliff-craft
 ./install.sh  # Symlinks hook to .git/hooks, done
 ```
 
@@ -112,7 +112,7 @@ cd git-gov
 Instead of OS-level device scanning (evdev), we capture at the **Git level** through a minimal hook:
 
 ```rust
-// git-gov/src/witness.rs
+// cliff-craft/src/witness.rs
 
 fn capture_focus_credential(commit_hash: &str) -> WitnessCredential {
     // Data sources (NO KEYLOGGING):
@@ -188,7 +188,7 @@ fn calculate_cnstyle_score(credential: &FocusCredential) -> u8 {
 For privacy-preserving audits, use **ZK range proofs**:
 
 ```rust
-// git-gov/src/zkp.rs
+// cliff-craft/src/zkp.rs
 // Prove: "This credential has entropy_score >= 60"
 // Without revealing: Which files, what changes, when exactly
 
@@ -202,7 +202,7 @@ fn generate_entropy_zkp(credential: &FocusCredential, threshold: u8)
         .commit(credential.entropy_score as u64, &credential.blinding_factor);
     
     // Prove in ZK: commitment_value >= threshold
-    let mut transcript = Transcript::new(b"git-gov-entropy");
+    let mut transcript = Transcript::new(b"cliff-craft-entropy");
     let proof = RangeProofProver::new()
         .prove_range(commitment, threshold, &mut transcript);
     
@@ -293,7 +293,7 @@ To forge a CNS credential with entropy_score >= 70, an AI agent would need to:
 **Goal:** Get a working entropy calculator running in pure Rust, zero OS dependencies.
 
 ```rust
-// git-gov/src/main.rs (Entry point)
+// cliff-craft/src/main.rs (Entry point)
 
 use sha2::{Sha256, Digest};
 use ed25519_dalek::{Keypair, Signer};
@@ -363,12 +363,12 @@ fn calculate_cnstyle_score(stats: &DiffStats) -> u8 {
 **Deliverables:**
 - ✅ Core entropy calculator (500 lines of Rust)
 - ✅ Git hook installer
-- ✅ Basic witness logging to `.git/objects/git-gov-witness/`
+- ✅ Basic witness logging to `.git/objects/cliff-craft-witness/`
 
 ### Phase 2: Signing & Verification (Week 3)
 
 ```rust
-// git-gov/src/crypto.rs
+// cliff-craft/src/crypto.rs
 
 use ed25519_dalek::{Keypair, SecretKey};
 use sha2::{Sha256, Digest};
@@ -399,26 +399,26 @@ fn verify_witness(witness: &WitnessCredential, public_key: &PublicKey) -> bool {
 ```
 
 **Deliverables:**
-- ✅ Key generation (user runs once: `git-gov init`)
+- ✅ Key generation (user runs once: `cliff-craft init`)
 - ✅ Witness signing (automatic on every commit)
-- ✅ Verification command (`git-gov verify <commit>`)
+- ✅ Verification command (`cliff-craft verify <commit>`)
 
 ### Phase 3: Git Trailer Integration (Week 4)
 
 ```bash
-# git-gov/hooks/prepare-commit-msg
+# cliff-craft/hooks/prepare-commit-msg
 
 #!/bin/bash
 # This hook is called after "git commit -m" but before editor opens
 
 commit_hash=$(git rev-parse HEAD 2>/dev/null || echo "new")
-witness=$(git-gov calculate-witness $commit_hash)
+witness=$(cliff-craft calculate-witness $commit_hash)
 entropy_score=$(echo $witness | jq '.score')
 
 # Append to commit message
 echo "" >> "$1"
-echo "Git-Gov-Witness: $witness" >> "$1"
-echo "Git-Gov-Entropy-Score: $entropy_score" >> "$1"
+echo "Cliff-Craft-Witness: $witness" >> "$1"
+echo "Cliff-Craft-Entropy-Score: $entropy_score" >> "$1"
 ```
 
 **Deliverables:**
@@ -428,7 +428,7 @@ echo "Git-Gov-Entropy-Score: $entropy_score" >> "$1"
 ### Phase 4: ZK Proof Optional Layer (Week 5-6)
 
 ```rust
-// git-gov/src/zkp_verifier.rs (Optional for privacy-preserving audits)
+// cliff-craft/src/zkp_verifier.rs (Optional for privacy-preserving audits)
 
 use bulletproofs::BulletproofGens;
 
@@ -450,7 +450,7 @@ fn verify_entropy_threshold(
 **Optional: Federation**
 ```rust
 // If user consents to external audits:
-// "I want my entropy credentials verified by the git-gov network"
+// "I want my entropy credentials verified by the cliff-craft network"
 // This sends ZK proofs (not credentials) to a decentralized verifier network
 ```
 
@@ -511,10 +511,10 @@ These patterns are mathematically hard to simulate in real-time:
 ### Positioning: From "DRM" to "Developer Sovereignty"
 
 **Frame it WRONG:**
-❌ "git-gov is a DRM system to prevent AI-generated code"
+❌ "cliff-craft is a DRM system to prevent AI-generated code"
 
 **Frame it RIGHT:**
-✅ "git-gov is a **cryptographic attestation system** that lets developers prove their work in an AI-flooded market"
+✅ "cliff-craft is a **cryptographic attestation system** that lets developers prove their work in an AI-flooded market"
 
 **Incentive Structure (Network Effects):**
 
@@ -550,7 +550,7 @@ Level 4: Ecosystem (Micro-economy)
 - Tools: IDE extensions for entropy visualization
 
 **Phase C: Standardization (Year 2)**
-- RFC for Git trailer standard (`Git-Gov-*`)
+- RFC for Git trailer standard (`Cliff-Craft-*`)
 - Potential: IETF draft (like Code-Review)
 
 ***
@@ -574,8 +574,8 @@ Level 4: Ecosystem (Micro-economy)
                                         ↓
                         ┌─────────────────────────┐
                         │ Commit with trailer:    │
-                        │ "Git-Gov-Witness: ..."  │
-                        │ "Git-Gov-Entropy: 78"   │
+                        │ "Cliff-Craft-Witness: ..."  │
+                        │ "Cliff-Craft-Entropy: 78"   │
                         └─────────────────────────┘
                                         ↓
                     ┌───────────────────────────────────────┐
@@ -585,7 +585,7 @@ Level 4: Ecosystem (Micro-economy)
                                         ↓
         ┌───────────────────────────────────────────────────┐
         │  Maintainer Reviews PR                            │
-        │  ├─ git-gov verify <commit>                       │
+        │  ├─ cliff-craft verify <commit>                       │
         │  │  Output: ✓ Valid signature, entropy=78/100     │
         │  ├─ Filter: "Only merge entropy >= 65"            │
         │  └─ Optional: ZK proof for privacy audit          │
@@ -605,8 +605,8 @@ Level 4: Ecosystem (Micro-economy)
 
 | Component | Size | Runtime | Dependency |
 |-----------|------|---------|------------|
-| **git-gov-core** (entropy calc) | 1.2MB | 5-10ms | None |
-| **git-gov-cli** (verification) | 0.8MB | 2ms | libgit2 (system) |
+| **cliff-craft-core** (entropy calc) | 1.2MB | 5-10ms | None |
+| **cliff-craft-cli** (verification) | 0.8MB | 2ms | libgit2 (system) |
 | **vscode-witness extension** (optional) | 0.5MB | <1ms | VSCode API |
 | **Git hooks** | 50KB | <200ms | git (system) |
 | **Total** | **2.5MB** | **~15ms per commit** | **Zero new deps** |
@@ -615,7 +615,7 @@ Level 4: Ecosystem (Micro-economy)
 
 | System | Size | Setup Time | Privacy | Cross-Platform | AI-Resistant |
 |--------|------|-----------|---------|---|---|
-| **git-gov (New)** | 2.5MB | 30s | ✅ High | ✅ Yes | ✅ Strong |
+| **cliff-craft (New)** | 2.5MB | 30s | ✅ High | ✅ Yes | ✅ Strong |
 | **Legacy evdev** | 240MB | 8-12m | ❌ Low | ❌ Linux only | ⚠️ Weak |
 | **Keystroke dynamics** | ~50MB | 5m | ❌ None | ✅ Yes | ❌ Spoofable |
 | **Blockchain commits** | ~150MB | 10-15m | ⚠️ Partial | ✅ Yes | ✅ Strong (but wasteful) |
@@ -626,32 +626,32 @@ Level 4: Ecosystem (Micro-economy)
 
 ```bash
 #!/bin/bash
-# git-gov-install.sh (Universal: Linux, macOS, Windows+WSL)
+# cliff-craft-install.sh (Universal: Linux, macOS, Windows+WSL)
 
 set -e
 
-echo "🔐 Installing git-gov v2.1 (Lightweight Edition)"
+echo "🔐 Installing cliff-craft v2.1 (Lightweight Edition)"
 
 # Step 1: Download prebuilt binary (~2.5MB)
 ARCH=$(uname -m)
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-BINARY_URL="https://releases.ionet.cl/git-gov/${OS}-${ARCH}/git-gov"
+BINARY_URL="https://releases.ionet.cl/cliff-craft/${OS}-${ARCH}/cliff-craft"
 
-mkdir -p ~/.git-gov
-curl -sL "$BINARY_URL" -o ~/.git-gov/git-gov
-chmod +x ~/.git-gov/git-gov
+mkdir -p ~/.cliff-craft
+curl -sL "$BINARY_URL" -o ~/.cliff-craft/cliff-craft
+chmod +x ~/.cliff-craft/cliff-craft
 
 # Step 2: Generate user keypair (ed25519)
-~/.git-gov/git-gov init --name "$(git config user.name)"
+~/.cliff-craft/cliff-craft init --name "$(git config user.name)"
 
 # Step 3: Install git hooks
-git config --global core.hooksPath ~/.git-gov/hooks
-cp ~/.git-gov/hooks/prepare-commit-msg .git/hooks/ 2>/dev/null || true
+git config --global core.hooksPath ~/.cliff-craft/hooks
+cp ~/.cliff-craft/hooks/prepare-commit-msg .git/hooks/ 2>/dev/null || true
 
 # Step 4: Add to PATH
-echo 'export PATH="$HOME/.git-gov:$PATH"' >> ~/.bashrc
+echo 'export PATH="$HOME/.cliff-craft:$PATH"' >> ~/.bashrc
 
-echo "✅ Complete! Try: git-gov status"
+echo "✅ Complete! Try: cliff-craft status"
 ```
 
 ***
@@ -668,7 +668,7 @@ echo "✅ Complete! Try: git-gov status"
 - **Economically viable** (no daemon overhead, no cloud dependency)
 
 **The 2026 Advantage:**
-In a world where AI can generate code, git-gov returns **scarcity and provenance** to human effort. It's not anti-AI; it's *pro-human-attribution*.
+In a world where AI can generate code, cliff-craft returns **scarcity and provenance** to human effort. It's not anti-AI; it's *pro-human-attribution*.
 
 This is the infrastructure layer for **developer sovereignty in the age of large language models.**
 
@@ -682,7 +682,7 @@ This is the infrastructure layer for **developer sovereignty in the age of large
 
 **Estimated time-to-production:** 8-12 weeks. **Total code:** ~5,000 lines of production Rust + ~1,000 lines of TypeScript for IDE integration.
 
-# DEEP RESEARCH OMEGA: git-gov v2.1 — TECHNICAL DEEP DIVE & INVESTMENT THESIS
+# DEEP RESEARCH OMEGA: cliff-craft v2.1 — TECHNICAL DEEP DIVE & INVESTMENT THESIS
 
 *Detected: Duplicate query with extended context request. Shifting from architectural overview to **operational implementation + investment mechanics + risk quantification.***
 
@@ -690,7 +690,7 @@ This is the infrastructure layer for **developer sovereignty in the age of large
 
 ## EXECUTIVE BRIEF: THE INVESTMENT VECTOR
 
-**Core Thesis:** git-gov is not a developer tool—it's a **market infrastructure play** that creates a new economic layer in Open Source by making human effort cryptographically *provable* and *tradable*.
+**Core Thesis:** cliff-craft is not a developer tool—it's a **market infrastructure play** that creates a new economic layer in Open Source by making human effort cryptographically *provable* and *tradable*.
 
 **Valuation Hypothesis:**
 - **TAM (Total Addressable Market):** $47B (OSS ecosystem value) × 15% (compliance/certification premiums) = **$7B**
@@ -711,7 +711,7 @@ This is the infrastructure layer for **developer sovereignty in the age of large
 | **Enterprise IP liability** | Companies need proof of human authorship | Q1 2026 (insurance pressure) |
 | **Regulatory pressure** | EU AI Act § transparency requirements | Q2 2026 projected |
 
-**The Gap:** There is **zero cryptographic attestation** of human code authorship in production. git-gov fills this in 8-12 weeks.
+**The Gap:** There is **zero cryptographic attestation** of human code authorship in production. cliff-craft fills this in 8-12 weeks.
 
 ***
 
@@ -1032,7 +1032,7 @@ Penalty:
 # Maintainer wants to merge PR from unknown contributor
 # Question: Is this human-written code?
 
-$ git-gov verify --pr 4521 --repo ionet/git-gov
+$ cliff-craft verify --pr 4521 --repo ionet/cliff-craft
 
 ✓ Signature valid (ed25519)
 ✓ Commits authored by: dev@example.com
@@ -1058,7 +1058,7 @@ PR #4521 by @dev_user
 All commits pass entropy verification.
 This PR was created with high probability by a human developer.
 
-View entropy audit: git-gov audit --pr 4521
+View entropy audit: cliff-craft audit --pr 4521
 ```
 
 ***
@@ -1187,7 +1187,7 @@ fn detect_temporal_injection(commits: &[Commit]) -> f64 {
 **Attack:** AI trains model to predict what CNS wants, generates code to satisfy it
 
 ```python
-# Attacker trains model on git-gov verified commits
+# Attacker trains model on cliff-craft verified commits
 model = train_cns_predictor(verified_commits=10000)
 
 # When generating code, use model to guide generation
@@ -1239,7 +1239,7 @@ fn detect_adversarial_generation(commit: &Commit) -> bool {
 **Deliverable:** Standalone Rust binary that calculates CNS from git history
 
 ```rust
-// git-gov/src/bin/entropy.rs
+// cliff-craft/src/bin/entropy.rs
 
 use git2::Repository;
 use sha2::{Sha256, Digest};
@@ -1293,13 +1293,13 @@ fn calculate_cnstyle(repo: &Repository, commit: &Commit) -> CNStyle {
 #!/bin/bash
 
 # Calculate witness
-WITNESS=$(git-gov calculate-witness HEAD)
+WITNESS=$(cliff-craft calculate-witness HEAD)
 ENTROPY=$(echo "$WITNESS" | jq '.score')
 
 # Append to commit message
 echo "" >> "$1"
-echo "Git-Gov-Score: $ENTROPY" >> "$1"
-echo "Git-Gov-Sig: $(echo $WITNESS | git-gov sign)" >> "$1"
+echo "Cliff-Craft-Score: $ENTROPY" >> "$1"
+echo "Cliff-Craft-Sig: $(echo $WITNESS | cliff-craft sign)" >> "$1"
 ```
 
 ***
@@ -1308,9 +1308,9 @@ echo "Git-Gov-Sig: $(echo $WITNESS | git-gov sign)" >> "$1"
 
 **Deliverable:**
 ```bash
-git-gov verify <commit>              # Verify single commit
-git-gov audit --pr <number>          # Audit full PR
-git-gov batch --since "2 days ago"   # Analyze range
+cliff-craft verify <commit>              # Verify single commit
+cliff-craft audit --pr <number>          # Audit full PR
+cliff-craft batch --since "2 days ago"   # Analyze range
 ```
 
 ***
@@ -1320,7 +1320,7 @@ git-gov batch --since "2 days ago"   # Analyze range
 **Deliverable:** Real-time entropy score in VSCode
 
 ```typescript
-// git-gov-vscode/extension.ts
+// cliff-craft-vscode/extension.ts
 import * as vscode from 'vscode';
 import { spawn } from 'child_process';
 
@@ -1344,8 +1344,8 @@ export function activate(context: vscode.ExtensionContext) {
 **Deliverable:** Bot that adds entropy badge to PRs
 
 ```yaml
-# .github/workflows/git-gov-audit.yml
-name: Git-Gov Entropy Audit
+# .github/workflows/cliff-craft-audit.yml
+name: Cliff-Craft Entropy Audit
 
 on: [pull_request]
 
@@ -1358,10 +1358,10 @@ jobs:
           fetch-depth: 0
       
       - run: |
-          curl -sL https://releases.ionet.cl/git-gov/linux-x64/git-gov | sudo tee /usr/local/bin/git-gov
-          chmod +x /usr/local/bin/git-gov
+          curl -sL https://releases.ionet.cl/cliff-craft/linux-x64/cliff-craft | sudo tee /usr/local/bin/cliff-craft
+          chmod +x /usr/local/bin/cliff-craft
           
-          ENTROPY=$(git-gov audit --pr ${{ github.event.number }})
+          ENTROPY=$(cliff-craft audit --pr ${{ github.event.number }})
           
           if [ "$ENTROPY" -gt 65 ]; then
               echo "✅ PASS: Human-certified code"
@@ -1377,7 +1377,7 @@ jobs:
 **Deliverable:** Privacy-preserving audit for enterprises
 
 ```rust
-// git-gov/src/zkp.rs
+// cliff-craft/src/zkp.rs
 
 fn generate_entropy_range_proof(
     score: u8,
@@ -1389,7 +1389,7 @@ fn generate_entropy_range_proof(
     let gens = BulletproofGens::new(64, 1);
     let (proof, _) = RangeProof::prove_single(
         &gens,
-        &mut Transcript::new(b"git-gov"),
+        &mut Transcript::new(b"cliff-craft"),
         score as u64,
         &blinding_factor,
         64,
@@ -1463,7 +1463,7 @@ Gross Margin: 95%+ (pure software)
 
 ## SECTION 9: COMPETITIVE MOAT
 
-### Why git-gov Cannot Be Disrupted
+### Why cliff-craft Cannot Be Disrupted
 
 | Asset | Strength | Time to Replicate |
 |-------|----------|------------------|
@@ -1475,7 +1475,7 @@ Gross Margin: 95%+ (pure software)
 
 **The Moat:** Network effects + first-mover advantage + Git's immutability
 
-Once 10% of OSS uses git-gov, 90% will follow (because code on GitHub becomes comparable by entropy score).
+Once 10% of OSS uses cliff-craft, 90% will follow (because code on GitHub becomes comparable by entropy score).
 
 ***
 
@@ -1508,7 +1508,7 @@ Once 10% of OSS uses git-gov, 90% will follow (because code on GitHub becomes co
 
 ### The Investment Thesis in One Sentence
 
-*git-gov transforms "proof of work" from a mining concept into a **cryptographic attestation system** that returns scarcity to human effort in an age of infinite AI-generated code.*
+*cliff-craft transforms "proof of work" from a mining concept into a **cryptographic attestation system** that returns scarcity to human effort in an age of infinite AI-generated code.*
 
 ***
 

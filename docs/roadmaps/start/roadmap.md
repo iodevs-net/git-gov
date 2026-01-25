@@ -1,4 +1,4 @@
-# Roadmap: Implementación de git-gov
+# Roadmap: Implementación de cliff-craft
 
 > **Estado**: Planificación Inicial
 > **Objetivo**: Construir el protocolo de gobernanza descentralizada de código de forma segura, ordenada y eficiente.
@@ -14,7 +14,7 @@
 
 ### 0.2. Estructura de Directorios Inicial
 ```
-git-gov/
+cliff-craft/
 ├── .gitignore
 ├── LICENSE
 ├── README.md
@@ -27,9 +27,9 @@ git-gov/
 ├── Cargo.lock
 ├── Makefile
 └── crates/
-    ├── git-gov-core/
-    ├── git-gov-cli/
-    └── git-gov-daemon/
+    ├── cliff-craft-core/
+    ├── cliff-craft-cli/
+    └── cliff-craft-daemon/
 ```
 
 ### 0.3. Archivos de Configuración Base
@@ -89,7 +89,7 @@ dirs = "5.0"
 rand = "0.8"
 
 # Internal
-git-gov-core = { path = "crates/git-gov-core" }
+cliff-craft-core = { path = "crates/cliff-craft-core" }
 ```
 
 **Perfiles de optimización**:
@@ -103,9 +103,9 @@ strip = true
 ```
 
 ### 1.2. Creación de Crates
-- [ ] Crear `crates/git-gov-core/` (libra)
-- [ ] Crear `crates/git-gov-cli/` (binario)
-- [ ] Crear `crates/git-gov-daemon/` (binario)
+- [ ] Crear `crates/cliff-craft-core/` (libra)
+- [ ] Crear `crates/cliff-craft-cli/` (binario)
+- [ ] Crear `crates/cliff-craft-daemon/` (binario)
 
 Para cada crate:
 1. Crear `Cargo.toml` con `workspace = true` para heredar dependencias
@@ -116,15 +116,15 @@ Para cada crate:
 - [ ] Compilar en modo debug: `cargo build`
 - [ ] Verificar estructura de workspace: `cargo metadata --format-version 1`
 - [ ] Compilar en modo release: `cargo build --release`
-- [ ] Verificar tamaño del binario: `ls -lh target/release/git-gov`
+- [ ] Verificar tamaño del binario: `ls -lh target/release/cliff-craft`
 - [ ] Comparar con objetivo de tamaño (ideal < 5MB)
 
 ---
 
-## Fase 2: git-gov-core - Fundamentos (Días 4-8)
+## Fase 2: cliff-craft-core - Fundamentos (Días 4-8)
 
 ### 2.1. Módulo de Manejo de Errores
-**Archivo**: `crates/git-gov-core/src/error.rs`
+**Archivo**: `crates/cliff-craft-core/src/error.rs`
 
 - [ ] Definir enum `Error` con variantes:
   - GitError
@@ -136,7 +136,7 @@ Para cada crate:
 - [ ] Usar `thiserror` para derivaciones automáticas
 
 ### 2.2. Módulo de Criptografía (Pruebas Iniciales)
-**Archivo**: `crates/git-gov-core/src/crypto.rs`
+**Archivo**: `crates/cliff-craft-core/src/crypto.rs`
 
 - [ ] Implementar `sentinel_self_check()` para verificar:
   - Generación de claves Ed25519
@@ -145,7 +145,7 @@ Para cada crate:
 - [ ] Configurar `rand::rngs::OsRng` para seguridad criptográfica
 
 ### 2.3. Módulo de Estadísticas (Sin nalgebra)
-**Archivo**: `crates/git-gov-core/src/stats.rs`
+**Archivo**: `crates/cliff-craft-core/src/stats.rs`
 
 - [ ] Implementar cálculo de Burstiness:
   - `calculate_burstiness(data: &[f64]) -> f64`
@@ -154,7 +154,7 @@ Para cada crate:
 - [ ] Pruebas unitarias con datos conocidos
 
 ### 2.4. Módulo de Compresión y Entropía
-**Archivo**: `crates/git-gov-core/src/entropy.rs`
+**Archivo**: `crates/cliff-craft-core/src/entropy.rs`
 
 - [ ] Implementar cálculo de NCD (Normalized Compression Distance):
   - `calculate_ncd(x: &[u8], y: &[u8]) -> f64`
@@ -164,7 +164,7 @@ Para cada crate:
 - [ ] Pruebas con datos sintéticos (alta/low entropía)
 
 ### 2.5. Módulo de Git (Abstracciones)
-**Archivo**: `crates/git-gov-core/src/git.rs`
+**Archivo**: `crates/cliff-craft-core/src/git.rs`
 
 - [ ] Funciones base con git2:
   - `get_repository(path: &str) -> Result<Repository>`
@@ -174,7 +174,7 @@ Para cada crate:
 - [ ] Pruebas en un repo temporal
 
 ### 2.6. Módulo de Provenance (Esquema JSON)
-**Archivo**: `crates/git-gov-core/src/provenance.rs`
+**Archivo**: `crates/cliff-craft-core/src/provenance.rs`
 
 - [ ] Definir structs con serde:
   - `ProvenanceManifest`
@@ -185,7 +185,7 @@ Para cada crate:
 - [ ] Serialización/deserialización
 
 ### 2.7. Libra Principal (lib.rs)
-**Archivo**: `crates/git-gov-core/src/lib.rs`
+**Archivo**: `crates/cliff-craft-core/src/lib.rs`
 
 - [ ] Exportar módulos públicos
 - [ ] Implementar `sentinel_self_check()` completa que combine:
@@ -202,10 +202,10 @@ Para cada crate:
 
 ---
 
-## Fase 3: git-gov-cli - Interfaz de Usuario (Días 9-11)
+## Fase 3: cliff-craft-cli - Interfaz de Usuario (Días 9-11)
 
 ### 3.1. Estructura de Comandos
-**Archivo**: `crates/git-gov-cli/src/main.rs`
+**Archivo**: `crates/cliff-craft-cli/src/main.rs`
 
 - [ ] Definir struct `Cli` con `#[derive(Parser)]`
 - [ ] Definir enum `Commands` con subcomandos:
@@ -216,7 +216,7 @@ Para cada crate:
   - `Help`: Ayuda general
 
 ### 3.2. Implementación de Comandos
-- [ ] `SystemCheck`: Llamar a `git_gov_core::sentinel_self_check()`
+- [ ] `SystemCheck`: Llamar a `cliff_craft_core::sentinel_self_check()`
 - [ ] `Init`: (placeholder) Lógica futura
 - [ ] `Daemon`: (placeholder) Lógica futura
 - [ ] `Verify { commit }`: (placeholder) Lógica futura
@@ -224,11 +224,11 @@ Para cada crate:
 - [ ] Salida estructurada (println, eprintln)
 
 ### 3.3. Pruebas del CLI
-- [ ] Compilar binario: `cargo build --package git-gov-cli`
+- [ ] Compilar binario: `cargo build --package cliff-craft-cli`
 - [ ] Ejecutar comandos:
-  - `./target/release/git-gov system-check`
+  - `./target/release/cliff-craft system-check`
   - Verificar que muestra reporte de integridad
-- [ ] Verificar ayuda: `./target/release/git-gov --help`
+- [ ] Verificar ayuda: `./target/release/cliff-craft --help`
 - [ ] Verificar tamaño del binario (debe ser pequeño)
 
 ### 3.4. Documentación
@@ -238,17 +238,17 @@ Para cada crate:
 
 ---
 
-## Fase 4: git-gov-daemon - Monitoreo en Segundo Plano (Días 12-16)
+## Fase 4: cliff-craft-daemon - Monitoreo en Segundo Plano (Días 12-16)
 
 ### 4.1. Estructura del Daemon
-**Archivo**: `crates/git-gov-daemon/src/main.rs`
+**Archivo**: `crates/cliff-craft-daemon/src/main.rs`
 
 - [ ] Entrada principal con manejo de señales (Ctrl+C, SIGTERM)
 - [ ] Estructura del loop principal
 - [ ] Manejo de errores (crash seguro)
 
 ### 4.2. Módulo de Surveillance (notify)
-**Archivo**: `crates/git-gov-daemon/src/surveillance.rs` (o dentro de main.rs)
+**Archivo**: `crates/cliff-craft-daemon/src/surveillance.rs` (o dentro de main.rs)
 
 - [ ] Configuración de notify:
   - Monitorear directorios de trabajo (recursivo)
@@ -264,7 +264,7 @@ Para cada crate:
 > **Validación de Métricas**: Las métricas calculadas deben ser validadas para distinguir entre contribuciones humanas y generadas por IA. Se implementará un sistema de umbrales dinámicos basado en estudios previos de patrones de edición humana.
 
 ### 4.3. Módulo de IPC (Comunicación)
-**Archivo**: `crates/git-gov-daemon/src/ipc.rs`
+**Archivo**: `crates/cliff-craft-daemon/src/ipc.rs`
 
 - [ ] Implementar comunicación con CLI:
   - Socket Unix (Linux/macOS)
@@ -272,13 +272,13 @@ Para cada crate:
 - [ ] Protocolo de mensajes simple (JSON RPC?)
 - [ ] Manejo de concurrencia (threads)
 
-### 4.4. Integración con git-gov-core
+### 4.4. Integración con cliff-craft-core
 - [ ] Usar módulos de estadística del core
 - [ ] Generar telemetría estructurada
 - [ ] Cache temporal de métricas
 
 ### 4.5. Pruebas del Daemon
-- [ ] Ejecutar en segundo plano: `./target/release/git-gov-daemon`
+- [ ] Ejecutar en segundo plano: `./target/release/cliff-craft-daemon`
 - [ ] Probar monitoreo de archivos reales
 - [ ] Verificar consumo de recursos (CPU, memoria)
 - [ ] Pruebas de estrés (múltiples eventos)
@@ -288,7 +288,7 @@ Para cada crate:
 ## Fase 5: Proof of Human Work (PoHW) (Días 17-20)
 
 ### 5.1. Implementación del Puzzle de PoW
-**Archivo**: `crates/git-gov-core/src/pow.rs`
+**Archivo**: `crates/cliff-craft-core/src/pow.rs`
 
 - [ ] Función `calculate_human_likelihood() -> f64`:
   - Usar burstiness y NCD
@@ -304,7 +304,7 @@ Para cada crate:
 
 ### 5.2. Sistema de Clave Pública/Privada
 - [ ] Generar clave de firma (Ed25519) en `Init`
-- [ ] Almacenar clave privada en directorio seguro (`~/.config/git-gov/`)
+- [ ] Almacenar clave privada en directorio seguro (`~/.config/cliff-craft/`)
 - [ ] Clave pública en repositorio (opcional)
 
 ### 5.3. Firma de Manifesto
@@ -603,7 +603,7 @@ Para cada crate:
 
 2. **Mañana**:
    - [ ] Crear `Cargo.toml` del workspace
-   - [ ] Crear primer crate (git-gov-core)
+   - [ ] Crear primer crate (cliff-craft-core)
    - [ ] Verificar compilación básica
 
 3. **Semanal**:
