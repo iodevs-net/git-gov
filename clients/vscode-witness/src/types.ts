@@ -6,4 +6,10 @@ export type SensorEvent =
   | { type: 'edit_burst'; file_path: string; chars_delta: number; timestamp_ms: number }
   | { type: 'navigation'; file_path: string; nav_type: NavigationType; timestamp_ms: number }
   | { type: 'heartbeat'; timestamp_ms: number }
-  | { type: 'disconnect'; timestamp_ms: number };
+  | { type: 'disconnect'; timestamp_ms: number }
+  | {
+      type: 'keystroke';
+      file_path: string;
+      timestamp_ms: number;
+      metadata: { char: string };
+    };

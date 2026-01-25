@@ -78,6 +78,23 @@ pub enum SensorEvent {
         /// Timestamp Unix en milisegundos
         timestamp_ms: u64,
     },
+
+    /// Evento de tecleo atómico para análisis cinemático CNS v3.0
+    Keystroke {
+        /// Ruta absoluta del archivo
+        file_path: String,
+        /// Timestamp Unix en milisegundos
+        timestamp_ms: u64,
+        /// Metadata del tecleo (opcional, para análisis de entropía)
+        metadata: KeystrokeMetadata,
+    },
+}
+
+/// Metadata para eventos de tecleo
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct KeystrokeMetadata {
+    /// Carácter insertado (si está disponible)
+    pub char: String,
 }
 
 /// Tipos de navegación que indican "lectura activa"
@@ -153,6 +170,7 @@ impl SensorEvent {
             SensorEvent::Navigation { timestamp_ms, .. } => *timestamp_ms,
             SensorEvent::Heartbeat { timestamp_ms } => *timestamp_ms,
             SensorEvent::Disconnect { timestamp_ms } => *timestamp_ms,
+            SensorEvent::Keystroke { timestamp_ms, .. } => *timestamp_ms,
         }
     }
 }

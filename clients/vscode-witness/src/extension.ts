@@ -43,20 +43,41 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument((e) => {
-       if (e.document.uri.scheme !== 'file') return;
+      if (e.document.uri.scheme !== 'file') return;
 
+      // CNS v3.0 Pareto Filtering
+      // Ignoramos Undo/Redo para no contaminar la métrica de originalidad humana
+      if (e.reason === vscode.TextDocumentChangeReason.Undo || e.reason === vscode.TextDocumentChangeReason.Redo) {
+        return;
+      }
+
+      const timestamp_ms = Date.now();
       const delta = e.contentChanges.reduce((acc, change) => {
         return acc + (change.text.length - change.rangeLength);
       }, 0);
 
+      // Si el cambio es masivo (ej. pegado de código), marcamos como potencial no-humano
+      const is_likely_paste = e.contentChanges.some(c => c.text.length > 50);
+
       if (delta === 0) return;
 
       if (currentEditFile !== e.document.fileName) {
-          flushEditBurst();
-          currentEditFile = e.document.fileName;
+        flushEditBurst();
+        currentEditFile = e.document.fileName;
       }
 
       editBurstAccumulator += delta;
+
+      // Enviar evento de tecleo atómico para análisis cinemático
+      // Solo para cambios pequeños (tecleo real)
+      if (delta === 1 && !is_likely_paste) {
+        sendEvent({
+          type: 'keystroke',
+          file_path: e.document.fileName,
+          timestamp_ms,
+          metadata: { char: e.contentChanges[0].text }
+        });
+      }
 
       if (editBurstTimeout) {
         clearTimeout(editBurstTimeout);
