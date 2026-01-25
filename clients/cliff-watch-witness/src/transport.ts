@@ -1,4 +1,8 @@
 import * as net from 'net';
+import * as child_process from 'child_process';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
 import { SensorEvent } from './types';
 
 const SOCKET_PATH = '/tmp/cliff-watch-sensor.sock';
@@ -8,9 +12,47 @@ export class Transport {
     private buffer: SensorEvent[] = [];
     private isConnecting: boolean = false;
     private retryDelay: number = 1000;
+    private daemonProcess: child_process.ChildProcess | null = null;
 
     constructor() {
-        this.connect();
+        this.ensureDaemonRunning().then(() => {
+            this.connect();
+        });
+    }
+
+    private async ensureDaemonRunning() {
+        // Si el socket ya existe, el daemon probablemente está corriendo
+        if (fs.existsSync(SOCKET_PATH)) {
+            return;
+        }
+
+        const platform = os.platform();
+        const arch = os.arch();
+        
+        // Buscamos el binario embebido basado en SO-Arch
+        // Por ahora soportamos linux-x64 como el binario que acabamos de compilar
+        let binName = `cliff-watch-daemon-${platform}-${arch}`;
+        if (platform === 'win32') binName += '.exe';
+
+        // La ruta del binario en el paquete VSIX instalado
+        const binPath = path.join(__dirname, '..', 'bin', binName);
+
+        if (fs.existsSync(binPath)) {
+            console.log(`Starting embedded Cliff-Watch Daemon: ${binPath}`);
+            try {
+                this.daemonProcess = child_process.spawn(binPath, [], {
+                    detached: true,
+                    stdio: 'ignore'
+                });
+                this.daemonProcess.unref();
+                // Damos un momento para que el socket se cree
+                await new Promise(resolve => setTimeout(resolve, 500));
+            } catch (e) {
+                console.error('Failed to start embedded daemon:', e);
+            }
+        } else {
+            console.warn(`No embedded daemon found at ${binPath}. Expecting global cliff-watch-daemon.`);
+        }
     }
 
     public connect() {
@@ -89,5 +131,7 @@ export class Transport {
             this.client.end();
             this.client = null;
         }
+        // No matamos el daemonProcess para que siga "vigilando" incluso si se cierra VSCode
+        // Cliff-Watch es soberano y persistente por diseño.
     }
 }
