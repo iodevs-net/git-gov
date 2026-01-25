@@ -318,12 +318,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "cliff-craft-cli"
+name = "cliff-watch-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "cliff-craft-core",
+ "cliff-watch-core",
  "console",
  "hex",
  "indicatif",
@@ -334,7 +334,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cliff-craft-core"
+name = "cliff-watch-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -367,11 +367,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "cliff-craft-daemon"
+name = "cliff-watch-daemon"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cliff-craft-core",
+ "cliff-watch-core",
  "config",
  "futures",
  "hex",

@@ -1,7 +1,7 @@
-# Roadmap Detallado para cliff-craft: Metodología Pareto y Solución Atómica de Causa Raíz
+# Roadmap Detallado para cliff-watch: Metodología Pareto y Solución Atómica de Causa Raíz
 
 > **Estado**: En Progreso
-> **Objetivo**: Implementar completamente cliff-craft utilizando la metodología Pareto (80/20) y soluciones atómicas para causas raíz.
+> **Objetivo**: Implementar completamente cliff-watch utilizando la metodología Pareto (80/20) y soluciones atómicas para causas raíz.
 > **Contexto**: La crisis de entropía en el desarrollo de software requiere un sistema robusto para validar la autenticidad de las contribuciones humanas.
 
 ---
@@ -26,7 +26,7 @@ Identificar y documentar los requisitos clave y las causas raíz de los problema
 ### Tareas Granulares
 1. **Revisión de Requisitos Clave**
    - Leer y analizar [`docs/research/requisitos_clave.md`](docs/research/requisitos_clave.md).
-   - Documentar los requisitos críticos para la implementación de cliff-craft.
+   - Documentar los requisitos críticos para la implementación de cliff-watch.
    - **Priorización (Pareto)**: 80% de los requisitos deben estar identificados y documentados.
    - **Causa Raíz**: Falta de claridad en los requisitos del proyecto.
    - **Solución Atómica**: Crear un documento resumido con los requisitos clave y validarlos con stakeholders.
@@ -61,7 +61,7 @@ Diseñar la arquitectura del sistema y definir los módulos principales.
 
 ### Tareas Granulares
 1. **Diseño de Arquitectura**
-   - Crear diagramas de arquitectura para los componentes principales (`cliff-craft-core`, `cliff-craft-cli`, `cliff-craft-daemon`).
+   - Crear diagramas de arquitectura para los componentes principales (`cliff-watch-core`, `cliff-watch-cli`, `cliff-watch-daemon`).
    - Definir las interacciones entre módulos.
    - **Priorización (Pareto)**: 80% de la arquitectura debe estar definida y validada.
    - **Causa Raíz**: Falta de una arquitectura clara y documentada.
@@ -93,7 +93,7 @@ Diseñar la arquitectura del sistema y definir los módulos principales.
 ## Fase 3: Implementación del Core (Días 8-15)
 
 ### Objetivo
-Implementar los módulos críticos del core (`cliff-craft-core`).
+Implementar los módulos críticos del core (`cliff-watch-core`).
 
 ### Tareas Granulares
 1. **Módulo de Criptografía**
@@ -122,7 +122,7 @@ Implementar los módulos críticos del core (`cliff-craft-core`).
 ## Fase 4: Implementación del CLI (Días 16-20)
 
 ### Objetivo
-Implementar la interfaz de línea de comandos (`cliff-craft-cli`).
+Implementar la interfaz de línea de comandos (`cliff-watch-cli`).
 
 ### Tareas Granulares
 1. **Estructura de Comandos**
@@ -185,7 +185,7 @@ Implementar el módulo Mouse Sentinel para la telemetría cinemática, enfocado 
 ## Fase 5: Implementación del Daemon (Días 21-25)
 
 ### Objetivo
-Implementar el daemon de monitoreo (`cliff-craft-daemon`).
+Implementar el daemon de monitoreo (`cliff-watch-daemon`).
 
 ### Tareas Granulares
 1. **Estructura del Daemon**
@@ -305,4 +305,4 @@ Documentar y publicar la versión inicial del sistema.
 ---
 
 ## Conclusión
-Este roadmap está diseñado para ser realista, medible y alineado con los objetivos del proyecto. Utiliza la metodología de Pareto para priorizar tareas y la solución atómica de causa raíz para abordar problemas críticos de manera efectiva. Cada fase y tarea está diseñada para maximizar el impacto con el menor esfuerzo, asegurando una implementación eficiente y exitosa de cliff-craft.
+Este roadmap está diseñado para ser realista, medible y alineado con los objetivos del proyecto. Utiliza la metodología de Pareto para priorizar tareas y la solución atómica de causa raíz para abordar problemas críticos de manera efectiva. Cada fase y tarea está diseñada para maximizar el impacto con el menor esfuerzo, asegurando una implementación eficiente y exitosa de cliff-watch.

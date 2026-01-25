@@ -1,12 +1,12 @@
-# Estructura del Proyecto cliff-craft
+# Estructura del Proyecto cliff-watch
 
 ## 1. Introducción
-Este documento describe la estructura del proyecto cliff-craft, incluyendo la organización de directorios, archivos y módulos, asegurando la adherencia a los principios DRY, LEAN y SOLID.
+Este documento describe la estructura del proyecto cliff-watch, incluyendo la organización de directorios, archivos y módulos, asegurando la adherencia a los principios DRY, LEAN y SOLID.
 
 ## 2. Estructura de Directorios
 
 ```
-cliff-craft/
+cliff-watch/
 ├── Cargo.toml                  # Workspace manifest
 ├── Cargo.lock                  # Locked dependencies
 ├── Makefile                    # Automation for cross-compilation and installation
@@ -24,7 +24,7 @@ cliff-craft/
 │   │   └── dry_lean_solid.md
 │   └── estructura_proyecto.md
 ├── crates/
-│   ├── cliff-craft-core/
+│   ├── cliff-watch-core/
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs
@@ -35,12 +35,12 @@ cliff-craft/
 │   │       ├── monitor.rs
 │   │       ├── provenance.rs
 │   │       └── stats.rs
-│   ├── cliff-craft-cli/
+│   ├── cliff-watch-cli/
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── main.rs
 │   │       └── commands/
-│   └── cliff-craft-daemon/
+│   └── cliff-watch-daemon/
 │       ├── Cargo.toml
 │       └── src/
 │           ├── main.rs
@@ -96,17 +96,17 @@ cliff-craft/
 
 ### 3.3 Módulos de Rust
 
-#### 3.3.1 crates/cliff-craft-core/
+#### 3.3.1 crates/cliff-watch-core/
 - **Descripción**: Lógica central del sistema.
 - **Contenido**:
   - Módulos para criptografía, entropía, Git, monitoreo, procedencia y estadísticas.
 
-#### 3.3.2 crates/cliff-craft-cli/
+#### 3.3.2 crates/cliff-watch-cli/
 - **Descripción**: Interfaz de línea de comandos.
 - **Contenido**:
   - Punto de entrada de la CLI y subcomandos.
 
-#### 3.3.3 crates/cliff-craft-daemon/
+#### 3.3.3 crates/cliff-watch-daemon/
 - **Descripción**: Proceso en segundo plano.
 - **Contenido**:
   - Punto de entrada del daemon y comunicación inter-procesos.
@@ -124,18 +124,18 @@ cliff-craft/
 ```toml
 [workspace]
 members = [
-    "crates/cliff-craft-core",
-    "crates/cliff-craft-cli",
-    "crates/cliff-craft-daemon",
+    "crates/cliff-watch-core",
+    "crates/cliff-watch-cli",
+    "crates/cliff-watch-daemon",
 ]
 resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-authors = ["cliff-craft team"]
+authors = ["cliff-watch team"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/cliff-craft/cliff-craft"
+repository = "https://github.com/cliff-watch/cliff-watch"
 
 [workspace.dependencies]
 clap = { version = "4.5", features = ["derive", "string", "env"] }
@@ -172,12 +172,12 @@ strip = true
 
 ## 5. Módulos de Rust
 
-### 5.1 cliff-craft-core
+### 5.1 cliff-watch-core
 
 #### 5.1.1 Cargo.toml
 ```toml
 [package]
-name = "cliff-craft-core"
+name = "cliff-watch-core"
 version.workspace = true
 edition.workspace = true
 description = "Core logic for Decentralized Code Governance metrics and crypto."
@@ -206,18 +206,18 @@ pub mod provenance;
 pub mod stats;
 ```
 
-### 5.2 cliff-craft-cli
+### 5.2 cliff-watch-cli
 
 #### 5.2.1 Cargo.toml
 ```toml
 [package]
-name = "cliff-craft"
+name = "cliff-watch"
 version.workspace = true
 edition.workspace = true
-default-run = "cliff-craft"
+default-run = "cliff-watch"
 
 [dependencies]
-cliff-craft-core = { workspace = true }
+cliff-watch-core = { workspace = true }
 clap = { workspace = true }
 anyhow = { workspace = true }
 ```
@@ -225,11 +225,11 @@ anyhow = { workspace = true }
 #### 5.2.2 src/main.rs
 ```rust
 use clap::{Parser, Subcommand};
-use cliff_craft_core::sentinel_self_check;
+use cliff_watch_core::sentinel_self_check;
 use std::process::ExitCode;
 
 #[derive(Parser)]
-#[command(name = "cliff-craft")]
+#[command(name = "cliff-watch")]
 #[command(version)]
 #[command(propagate_version = true)]
 struct Cli {
@@ -265,24 +265,24 @@ fn main() -> ExitCode {
 }
 ```
 
-### 5.3 cliff-craft-daemon
+### 5.3 cliff-watch-daemon
 
 #### 5.3.1 Cargo.toml
 ```toml
 [package]
-name = "cliff-craft-daemon"
+name = "cliff-watch-daemon"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-cliff-craft-core = { workspace = true }
+cliff-watch-core = { workspace = true }
 anyhow = { workspace = true }
 ctrlc = "3.4"
 ```
 
 #### 5.3.2 src/main.rs
 ```rust
-use cliff_craft_core::monitor::start_monitoring;
+use cliff_watch_core::monitor::start_monitoring;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -317,4 +317,4 @@ echo "Hooks instalados correctamente."
 ```
 
 ## 7. Conclusión
-Este documento describe la estructura del proyecto cliff-craft, asegurando que el diseño cumpla con los principios DRY, LEAN y SOLID. La estructura propuesta proporciona una base sólida para la implementación del sistema, garantizando la estabilidad, seguridad y eficiencia del mismo.
+Este documento describe la estructura del proyecto cliff-watch, asegurando que el diseño cumpla con los principios DRY, LEAN y SOLID. La estructura propuesta proporciona una base sólida para la implementación del sistema, garantizando la estabilidad, seguridad y eficiencia del mismo.

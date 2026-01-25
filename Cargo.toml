@@ -1,18 +1,18 @@
 [workspace]
 members = [
-    "crates/cliff-craft-core",
-    "crates/cliff-craft-cli",
-    "crates/cliff-craft-daemon",
+    "crates/cliff-watch-core",
+    "crates/cliff-watch-cli",
+    "crates/cliff-watch-daemon",
 ]
 resolver = "2"
 
 [workspace.package]
-name = "cliff-craft"
+name = "cliff-watch"
 version = "0.1.0"
 edition = "2021"
-authors = ["Cliff-Craft Project"]
-description = "Sovereign Proof of Human Work (PoHW) Protocol"
-repository = "https://github.com/iodevs-net/cliff-craft"
+authors = ["Cliff-Watch Project"]
+description = "Sovereign Proof of Human Work (PoHW) & Focus Watcher"
+repository = "https://github.com/iodevs-net/cliff-watch"
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
@@ -52,4 +52,4 @@ bulletproofs = "5.0"
 tss-esapi = "7.5"
 
 # Local Crates
-cliff-craft-core = { path = "crates/cliff-craft-core" }
+cliff-watch-core = { path = "crates/cliff-watch-core" }

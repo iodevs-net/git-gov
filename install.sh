@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Cliff-Craft Shadow Installer 🏛️⚙️
+# Cliff-Watch Shadow Installer 🏛️⚙️
 # Formal deployment script for Linux systems
 
 set -e
@@ -10,7 +10,7 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${BLUE}Cliff-Craft: Iniciando instalación formal...${NC}"
+echo -e "${BLUE}Cliff-Watch: Iniciando instalación formal...${NC}"
 
 # 1. Verificar dependencias
 if ! command -v cargo &> /dev/null; then
@@ -24,8 +24,8 @@ cargo build --release
 
 # 3. Instalación de binarios
 echo -e "${BLUE}Desplegando binarios a /usr/local/bin (requiere sudo)...${NC}"
-sudo cp target/release/cliff-craft-cli /usr/local/bin/cliff-craft
-sudo cp target/release/cliff-craft-daemon /usr/local/bin/cliff-craft-daemon
+sudo cp target/release/cliff-watch-cli /usr/local/bin/cliff-watch
+sudo cp target/release/cliff-watch-daemon /usr/local/bin/cliff-watch-daemon
 
 # 4. Configuración de permisos
 echo -e "${BLUE}Configurando permisos de hardware para el usuario actual...${NC}"
@@ -33,10 +33,10 @@ sudo usermod -a -G input $USER || true
 
 # 5. Finalización
 echo -e "--------------------------------------------------------"
-echo -e "${GREEN}✅ Cliff-Craft instalado con éxito.${NC}"
+echo -e "${GREEN}✅ Cliff-Watch instalado con éxito.${NC}"
 echo -e "Comandos disponibles:"
-echo -e "  - ${BLUE}cliff-craft-daemon${NC}: Inicia el centinela."
-echo -e "  - ${BLUE}cliff-craft init${NC}: Activa la aduana en un repositorio."
+echo -e "  - ${BLUE}cliff-watch-daemon${NC}: Inicia el centinela."
+echo -e "  - ${BLUE}cliff-watch init${NC}: Activa la aduana en un repositorio."
 echo -e ""
 echo -e "${BLUE}IMPORTANTE:${NC} Para que los cambios de grupo tengan efecto,"
 echo -e "debes cerrar sesión e iniciarla de nuevo."

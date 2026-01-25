@@ -1,14 +1,14 @@
-# Definición de Módulos para cliff-craft
+# Definición de Módulos para cliff-watch
 
 ## 1. Introducción
-Este documento define los módulos principales del sistema cliff-craft, sus responsabilidades y las interacciones entre ellos, asegurando la adherencia a los principios DRY, LEAN y SOLID.
+Este documento define los módulos principales del sistema cliff-watch, sus responsabilidades y las interacciones entre ellos, asegurando la adherencia a los principios DRY, LEAN y SOLID.
 
 ## 2. Módulos Principales
 
-### 2.1 cliff-craft-core
+### 2.1 cliff-watch-core
 
 #### 2.1.1 Descripción
-El módulo `cliff-craft-core` contiene la lógica central del sistema, incluyendo el cálculo de métricas, criptografía, integración con Git y manejo de metadatos de procedencia.
+El módulo `cliff-watch-core` contiene la lógica central del sistema, incluyendo el cálculo de métricas, criptografía, integración con Git y manejo de metadatos de procedencia.
 
 #### 2.1.2 Responsabilidades
 - Cálculo de métricas de entropía y burstiness.
@@ -66,13 +66,13 @@ El módulo `cliff-craft-core` contiene la lógica central del sistema, incluyend
   - Análisis de distribuciones.
   - Cálculo de métricas de burstiness.
 
-### 2.2 cliff-craft-cli
+### 2.2 cliff-watch-cli
 
 #### 2.2.1 Descripción
-El módulo `cliff-craft-cli` proporciona una interfaz de línea de comandos para interactuar con el sistema cliff-craft.
+El módulo `cliff-watch-cli` proporciona una interfaz de línea de comandos para interactuar con el sistema cliff-watch.
 
 #### 2.2.2 Responsabilidades
-- Proporcionar una interfaz de línea de comandos para interactuar con cliff-craft.
+- Proporcionar una interfaz de línea de comandos para interactuar con cliff-watch.
 - Ejecutar comandos como `init`, `verify`, `daemon`, y `SystemCheck`.
 - Manejo de argumentos y opciones de línea de comandos.
 
@@ -80,7 +80,7 @@ El módulo `cliff-craft-cli` proporciona una interfaz de línea de comandos para
 
 ##### 2.2.3.1 main.rs
 - **Descripción**: Punto de entrada de la CLI.
-- **Dependencias**: `clap`, `cliff-craft-core`.
+- **Dependencias**: `clap`, `cliff-watch-core`.
 - **Funciones Principales**:
   - Parsing de argumentos.
   - Ejecución de comandos.
@@ -88,29 +88,29 @@ El módulo `cliff-craft-cli` proporciona una interfaz de línea de comandos para
 
 ##### 2.2.3.2 commands/
 - **Descripción**: Implementación de subcomandos.
-- **Dependencias**: `clap`, `cliff-craft-core`, `anyhow`.
+- **Dependencias**: `clap`, `cliff-watch-core`, `anyhow`.
 - **Funciones Principales**:
   - Implementación de `init`.
   - Implementación de `verify`.
   - Implementación de `daemon`.
   - Implementación de `SystemCheck`.
 
-### 2.3 cliff-craft-daemon
+### 2.3 cliff-watch-daemon
 
 #### 2.3.1 Descripción
-El módulo `cliff-craft-daemon` ejecuta como un proceso en segundo plano, monitoreando eventos de edición en tiempo real y calculando métricas de actividad.
+El módulo `cliff-watch-daemon` ejecuta como un proceso en segundo plano, monitoreando eventos de edición en tiempo real y calculando métricas de actividad.
 
 #### 2.3.2 Responsabilidades
 - Ejecutar como un proceso en segundo plano.
 - Monitorear eventos de edición en tiempo real.
 - Calcular métricas de actividad.
-- Comunicarse con cliff-craft-core para generar metadatos de procedencia.
+- Comunicarse con cliff-watch-core para generar metadatos de procedencia.
 
 #### 2.3.3 Submódulos
 
 ##### 2.3.3.1 main.rs
 - **Descripción**: Punto de entrada del daemon.
-- **Dependencias**: `cliff-craft-core`, `ctrlc`.
+- **Dependencias**: `cliff-watch-core`, `ctrlc`.
 - **Funciones Principales**:
   - Inicialización del daemon.
   - Manejo de señales de interrupción.
@@ -118,7 +118,7 @@ El módulo `cliff-craft-daemon` ejecuta como un proceso en segundo plano, monito
 
 ##### 2.3.3.2 ipc.rs
 - **Descripción**: Comunicación inter-procesos.
-- **Dependencias**: `cliff-craft-core`.
+- **Dependencias**: `cliff-watch-core`.
 - **Funciones Principales**:
   - Manejo de sockets de dominio Unix (macOS/Linux).
   - Manejo de named pipes (Windows).
@@ -134,10 +134,10 @@ El módulo `cliff-craft-daemon` ejecuta como un proceso en segundo plano, monito
 | monitor | Monitoreo de eventos | notify |
 | provenance | Manejo de metadatos | serde, serde_json, chrono |
 | stats | Análisis estadístico | statrs |
-| main.rs (CLI) | Punto de entrada CLI | clap, cliff-craft-core |
-| commands/ (CLI) | Implementación de comandos | clap, cliff-craft-core, anyhow |
-| main.rs (Daemon) | Punto de entrada Daemon | cliff-craft-core, ctrlc |
-| ipc.rs (Daemon) | Comunicación inter-procesos | cliff-craft-core |
+| main.rs (CLI) | Punto de entrada CLI | clap, cliff-watch-core |
+| commands/ (CLI) | Implementación de comandos | clap, cliff-watch-core, anyhow |
+| main.rs (Daemon) | Punto de entrada Daemon | cliff-watch-core, ctrlc |
+| ipc.rs (Daemon) | Comunicación inter-procesos | cliff-watch-core |
 
 ## 4. Interacciones entre Módulos
 
@@ -145,8 +145,8 @@ El módulo `cliff-craft-daemon` ejecuta como un proceso en segundo plano, monito
 
 ```mermaid
 graph TD
-    A[cliff-craft-cli] -->|Comandos| B[cliff-craft-core]
-    B -->|Lógica de Negocio| C[cliff-craft-daemon]
+    A[cliff-watch-cli] -->|Comandos| B[cliff-watch-core]
+    B -->|Lógica de Negocio| C[cliff-watch-daemon]
     C -->|Monitoreo| D[Sistema de Archivos]
     C -->|Eventos| E[Git Repositorio]
     B -->|Integración| E
@@ -169,7 +169,7 @@ El daemon y la CLI se comunican mediante sockets de dominio Unix en macOS/Linux 
 ## 5. Principios de Diseño
 
 ### 5.1 DRY (Don't Repeat Yourself)
-- **Implementación**: La lógica de negocio se centraliza en `cliff-craft-core`, evitando la duplicación de código.
+- **Implementación**: La lógica de negocio se centraliza en `cliff-watch-core`, evitando la duplicación de código.
 - **Beneficio**: Reduce la redundancia y facilita el mantenimiento.
 
 ### 5.2 LEAN (Optimización para Hardware de Bajos Recursos)
@@ -193,4 +193,4 @@ El daemon y la CLI se comunican mediante sockets de dominio Unix en macOS/Linux 
 - **Resultado**: Confirmación de la arquitectura y ajustes necesarios.
 
 ## 7. Conclusión
-Este documento define los módulos principales del sistema cliff-craft, sus responsabilidades y las interacciones entre ellos, asegurando la adherencia a los principios DRY, LEAN y SOLID. La arquitectura propuesta proporciona una base sólida para la implementación del sistema, garantizando la estabilidad, seguridad y eficiencia del mismo.
+Este documento define los módulos principales del sistema cliff-watch, sus responsabilidades y las interacciones entre ellos, asegurando la adherencia a los principios DRY, LEAN y SOLID. La arquitectura propuesta proporciona una base sólida para la implementación del sistema, garantizando la estabilidad, seguridad y eficiencia del mismo.

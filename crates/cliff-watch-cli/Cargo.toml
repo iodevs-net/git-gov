@@ -1,0 +1,29 @@
+[package]
+name = "cliff-watch-cli"
+version = "0.1.0"
+edition = "2021"
+authors = ["Cliff-Watch Project"]
+description = "CLI interface for Cliff-Watch sovereign code governance"
+
+[dependencies]
+cliff-watch-core = { path = "../cliff-watch-core" }
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { workspace = true }
+hex = { workspace = true }
+tokio = { workspace = true }
+anyhow = "1.0"
+tracing = "0.1"
+indicatif = "0.17"
+console = "0.15"
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"
+strip = true
+codegen-units = 1
+
+[features]
+default = []
+lean = []

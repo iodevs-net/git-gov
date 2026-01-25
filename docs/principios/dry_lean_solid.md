@@ -1,11 +1,11 @@
-# Arquitectura cliff-craft v3.0: Mandamientos DRY, LEAN y SOLID
+# Arquitectura cliff-watch v3.0: Mandamientos DRY, LEAN y SOLID
 
 Este documento define las leyes de diseño para la fase de **Gobernanza Soberana v3.0**. Cada línea de código debe ser un testimonio de eficiencia (LEAN), modularidad (SOLID) y elegancia técnica (DRY).
 
 ## 1. DRY (Don't Repeat Yourself) - Criptografía y Lógica
 
 ### 1.1 Módulos Atómicos de Criptografía
-- **Mandamiento**: Ninguna lógica de Bulletproofs o TPM debe estar fuera de `cliff-craft-core::crypto`.
+- **Mandamiento**: Ninguna lógica de Bulletproofs o TPM debe estar fuera de `cliff-watch-core::crypto`.
 - **Implementación**: El Daemon y la CLI invocan abstracciones limpias. La criptografía es una "Caja Negra" verificable.
 
 ### 1.2 Unificación de Protocolos (UDS)
@@ -25,9 +25,9 @@ Este documento define las leyes de diseño para la fase de **Gobernanza Soberana
 ## 3. SOLID (Separación de Concerns v3)
 
 ### 3.1 Single Responsibility: El Testigo vs. El Verificador
-- **cliff-craft-witness (IDE)**: Única responsabilidad: Capturar el ritmo humano (CNS). No firma, no juzga.
-- **cliff-craft-daemon**: Única responsabilidad: Transformar ritmo en Prueba Criptográfica (ZKP).
-- **cliff-craft-cli**: Única responsabilidad: Certificar la prueba antes del commit.
+- **cliff-watch-witness (IDE)**: Única responsabilidad: Capturar el ritmo humano (CNS). No firma, no juzga.
+- **cliff-watch-daemon**: Única responsabilidad: Transformar ritmo en Prueba Criptográfica (ZKP).
+- **cliff-watch-cli**: Única responsabilidad: Certificar la prueba antes del commit.
 
 ### 3.2 Dependency Inversion: Abstracción de Hardware
 - **Mandamiento**: El núcleo no debe saber si estás en Linux o macOS.
@@ -38,4 +38,4 @@ Todo código v3 debe contribuir a la misión: **Detectar y bloquear la Bio-Puppe
 - Si un refactor no mejora la detección de entropía o el blindaje criptográfico, es superfluo (Antipattern LEAN).
 
 ---
-*Actualizado para cliff-craft v2.1/v3.0 - 2026*
+*Actualizado para cliff-watch v2.1/v3.0 - 2026*

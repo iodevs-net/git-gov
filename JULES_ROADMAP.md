@@ -1,11 +1,11 @@
-# Jules Roadmap: Cliff-Craft Witness (VS Code Extension) 🛡️🧠
+# Jules Roadmap: Cliff-Watch Witness (VS Code Extension) 🛡️🧠
 
-Este roadmap define el plan de ejecución atómico para implementar la extensión de VS Code que actúa como sensor de foco para Cliff-Craft.
+Este roadmap define el plan de ejecución atómico para implementar la extensión de VS Code que actúa como sensor de foco para Cliff-Watch.
 
 ## Contexto Técnico
-- **Backend**: Daemon en Rust escuchando en `/tmp/cliff-craft-sensor.sock` (Unix Domain Socket).
+- **Backend**: Daemon en Rust escuchando en `/tmp/cliff-watch-sensor.sock` (Unix Domain Socket).
 - **Frontend**: Extensión VS Code (TypeScript).
-- **Protocolo**: [focus_protocol.rs](cliff-craft/crates/cliff-craft-core/src/focus_protocol.rs) (Fuente de verdad).
+- **Protocolo**: [focus_protocol.rs](cliff-watch/crates/cliff-watch-core/src/focus_protocol.rs) (Fuente de verdad).
 
 ---
 
@@ -56,7 +56,7 @@ export type SensorEvent =
 ## Fase 3: Transporte (The Pipe)
 
 ### 3.1 Unix Socket Client
-- [ ] Usar `net.createConnection({ path: '/tmp/cliff-craft-sensor.sock' })`.
+- [ ] Usar `net.createConnection({ path: '/tmp/cliff-watch-sensor.sock' })`.
 - [ ] **Nota**: Aunque el prompt inicial mencionaba HTTP, hemos decidido usar **Unix Sockets** directamente por razones de seguridad, privacidad y menor latencia. Evita levantar servidores HTTP innecesarios.
 - [ ] Implementar reconexión automática (exponential backoff).
 - [ ] Fallos silenciosos: Si el daemon no está, la extensión sigue funcionando sin molestar al usuario.
@@ -78,4 +78,4 @@ export type SensorEvent =
 
 ## Cómo Validar tu Progreso (Jules):
 1. `npm test` debe ejecutar la suite de `fast-check` con 10,000 runs sin fallos.
-2. Al abrir VS Code en el repo de `cliff-craft`, `nc -l -U /tmp/cliff-craft-sensor.sock` debe mostrar el flujo de JSONs correcto.
+2. Al abrir VS Code en el repo de `cliff-watch`, `nc -l -U /tmp/cliff-watch-sensor.sock` debe mostrar el flujo de JSONs correcto.

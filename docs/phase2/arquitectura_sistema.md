@@ -1,23 +1,23 @@
-# Arquitectura del Sistema cliff-craft
+# Arquitectura del Sistema cliff-watch
 
 ## 1. Introducción
-Este documento detalla la arquitectura del sistema cliff-craft, incluyendo diagramas de componentes, interacciones entre módulos y diseño de la solución.
+Este documento detalla la arquitectura del sistema cliff-watch, incluyendo diagramas de componentes, interacciones entre módulos y diseño de la solución.
 
 ## 2. Visión General de la Arquitectura
 
 ### 2.1 Componentes Principales
-El sistema cliff-craft se compone de tres módulos principales:
+El sistema cliff-watch se compone de tres módulos principales:
 
-1. **cliff-craft-core**: Lógica central para el cálculo de métricas y criptografía.
-2. **cliff-craft-cli**: Interfaz de línea de comandos para interactuar con el sistema.
-3. **cliff-craft-daemon**: Proceso en segundo plano que monitorea la actividad de edición.
+1. **cliff-watch-core**: Lógica central para el cálculo de métricas y criptografía.
+2. **cliff-watch-cli**: Interfaz de línea de comandos para interactuar con el sistema.
+3. **cliff-watch-daemon**: Proceso en segundo plano que monitorea la actividad de edición.
 
 ### 2.2 Diagrama de Arquitectura
 
 ```mermaid
 graph TD
-    A[cliff-craft-cli] -->|Comandos| B[cliff-craft-core]
-    B -->|Lógica de Negocio| C[cliff-craft-daemon]
+    A[cliff-watch-cli] -->|Comandos| B[cliff-watch-core]
+    B -->|Lógica de Negocio| C[cliff-watch-daemon]
     C -->|Monitoreo| D[Sistema de Archivos]
     C -->|Eventos| E[Git Repositorio]
     B -->|Integración| E
@@ -25,7 +25,7 @@ graph TD
 
 ## 3. Diseño de Módulos
 
-### 3.1 cliff-craft-core
+### 3.1 cliff-watch-core
 
 #### 3.1.1 Responsabilidades
 - Cálculo de métricas de entropía y burstiness.
@@ -83,10 +83,10 @@ graph TD
   - Análisis de distribuciones.
   - Cálculo de métricas de burstiness.
 
-### 3.2 cliff-craft-cli
+### 3.2 cliff-watch-cli
 
 #### 3.2.1 Responsabilidades
-- Proporcionar una interfaz de línea de comandos para interactuar con cliff-craft.
+- Proporcionar una interfaz de línea de comandos para interactuar con cliff-watch.
 - Ejecutar comandos como `init`, `verify`, `daemon`, y `SystemCheck`.
 - Manejo de argumentos y opciones de línea de comandos.
 
@@ -94,7 +94,7 @@ graph TD
 
 ##### 3.2.2.1 main.rs
 - **Responsabilidad**: Punto de entrada de la CLI.
-- **Dependencias**: `clap`, `cliff-craft-core`.
+- **Dependencias**: `clap`, `cliff-watch-core`.
 - **Funciones Principales**:
   - Parsing de argumentos.
   - Ejecución de comandos.
@@ -102,26 +102,26 @@ graph TD
 
 ##### 3.2.2.2 commands/
 - **Responsabilidad**: Implementación de subcomandos.
-- **Dependencias**: `clap`, `cliff-craft-core`, `anyhow`.
+- **Dependencias**: `clap`, `cliff-watch-core`, `anyhow`.
 - **Funciones Principales**:
   - Implementación de `init`.
   - Implementación de `verify`.
   - Implementación de `daemon`.
   - Implementación de `SystemCheck`.
 
-### 3.3 cliff-craft-daemon
+### 3.3 cliff-watch-daemon
 
 #### 3.3.1 Responsabilidades
 - Ejecutar como un proceso en segundo plano.
 - Monitorear eventos de edición en tiempo real.
 - Calcular métricas de actividad.
-- Comunicarse con cliff-craft-core para generar metadatos de procedencia.
+- Comunicarse con cliff-watch-core para generar metadatos de procedencia.
 
 #### 3.3.2 Submódulos
 
 ##### 3.3.2.1 main.rs
 - **Responsabilidad**: Punto de entrada del daemon.
-- **Dependencias**: `cliff-craft-core`, `ctrlc`.
+- **Dependencias**: `cliff-watch-core`, `ctrlc`.
 - **Funciones Principales**:
   - Inicialización del daemon.
   - Manejo de señales de interrupción.
@@ -129,7 +129,7 @@ graph TD
 
 ##### 3.3.2.2 ipc.rs
 - **Responsabilidad**: Comunicación inter-procesos.
-- **Dependencias**: `cliff-craft-core`.
+- **Dependencias**: `cliff-watch-core`.
 - **Funciones Principales**:
   - Manejo de sockets de dominio Unix (macOS/Linux).
   - Manejo de named pipes (Windows).
@@ -142,13 +142,13 @@ graph TD
 ```mermaid
 sequenceDiagram
     participant U as Usuario
-    participant C as cliff-craft-cli
-    participant B as cliff-craft-core
-    participant D as cliff-craft-daemon
+    participant C as cliff-watch-cli
+    participant B as cliff-watch-core
+    participant D as cliff-watch-daemon
     participant G as Git
     participant F as Sistema de Archivos
 
-    U->>C: Ejecuta comando (e.g., cliff-craft init)
+    U->>C: Ejecuta comando (e.g., cliff-watch init)
     C->>B: Invoca lógica de negocio
     B->>G: Interactúa con repositorio Git
     B-->>C: Retorna resultado
@@ -175,7 +175,7 @@ El Mouse Sentinel es un módulo de telemetría cinemática diseñado para distin
 graph TD
     A[Mouse Sentinel] -->|Eventos| B[Buffer Circular Efímero]
     B -->|Datos| C[Hilo de Análisis]
-    C -->|Métricas| D[cliff-craft-core]
+    C -->|Métricas| D[cliff-watch-core]
     D -->|Provenance| E[Git Trailer]
 ```
 
@@ -235,4 +235,4 @@ Date:   Mon Jan 1 00:00:00 2024 +0000
 - **Resultado**: Confirmación de la arquitectura y ajustes necesarios.
 
 ## 8. Conclusión
-Este documento detalla la arquitectura del sistema cliff-craft, asegurando que el diseño cumpla con los principios DRY, LEAN y SOLID. La arquitectura propuesta proporciona una base sólida para la implementación del sistema, garantizando la estabilidad, seguridad y eficiencia del mismo.
+Este documento detalla la arquitectura del sistema cliff-watch, asegurando que el diseño cumpla con los principios DRY, LEAN y SOLID. La arquitectura propuesta proporciona una base sólida para la implementación del sistema, garantizando la estabilidad, seguridad y eficiencia del mismo.

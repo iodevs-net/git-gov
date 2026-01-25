@@ -1,8 +1,8 @@
-# Contributing to Cliff-Craft
+# Contributing to Cliff-Watch
 
 ## Testing Localmente
 
-Para probar Cliff-Craft en tus propios repositorios ("Dogfooding"):
+Para probar Cliff-Watch en tus propios repositorios ("Dogfooding"):
 
 1.  **Compilar Release:**
     ```bash
@@ -17,7 +17,7 @@ Para probar Cliff-Craft en tus propios repositorios ("Dogfooding"):
 3.  **Inicializar en otro repo:**
     ```bash
     cd /path/to/other/repo
-    cliff-craft init
+    cliff-watch init
     ```
 
 ## Desarrollo

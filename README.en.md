@@ -1,12 +1,12 @@
-# Cliff-Craft: Proof of Human Work (PoHW) 🦾⛓️
+# Cliff-Watch: Proof of Human Work (PoHW) 🦾⛓️
 
 > **"Information must be paid for with energy. No commit without sweat."**
 
-Cliff-Craft is a sovereign governance system for Git repositories that implements the **First Law of Software Thermodynamics**. Its mission is to eradicate "Bio-Puppetry" (using humans as mere signers for AI-generated code) through an invisible and mathematically incorruptible kinematic validation system.
+Cliff-Watch is a sovereign governance system for Git repositories that implements the **First Law of Software Thermodynamics**. Its mission is to eradicate "Bio-Puppetry" (using humans as mere signers for AI-generated code) through an invisible and mathematically incorruptible kinematic validation system.
 
 ## 🌌 The Shadow Philosophy
 
-In the age of generative AI, code is cheap, but **human attention** is the scarcest and most valuable resource. Cliff-Craft acts as a "shadow" that monitors your biomechanical effort (mouse movement, focus time) and converts it into **Attention Credits**.
+In the age of generative AI, code is cheap, but **human attention** is the scarcest and most valuable resource. Cliff-Watch acts as a "shadow" that monitors your biomechanical effort (mouse movement, focus time) and converts it into **Attention Credits**.
 
 Without these credits, the repository simply denies entry. It is the end of "Code Dumping."
 
@@ -14,9 +14,9 @@ Without these credits, the repository simply denies entry. It is the end of "Cod
 
 ## ⚙️ Thermodynamic Architecture
 
-Cliff-Craft operates under a closed energy cycle:
+Cliff-Watch operates under a closed energy cycle:
 
-1.  **Kinematic Capture**: The Daemon (`cliff-craft-daemon`) captures the entropy of your physical movements.
+1.  **Kinematic Capture**: The Daemon (`cliff-watch-daemon`) captures the entropy of your physical movements.
 2.  **Kinetic Battery**: Your effort charges a virtual battery. If the movement is mechanical (scripts/jigglers), the battery will not charge due to **Low NCD Entropy**.
 3.  **Entropic Cost**: Every line of code you write has a cost based on its information density.
 4.  **Git Customs**: When performing a `git commit`, the system verifies if you have enough "energy" to pay for the complexity of your changes.
@@ -45,11 +45,11 @@ graph LR
 For a formal and global installation on your system:
 
 ```bash
-git clone https://github.com/iodevs-net/cliff-craft.git
-cd cliff-craft
+git clone https://github.com/iodevs-net/cliff-watch.git
+cd cliff-watch
 make install
 ```
-*This command compiles the project and deploys the `cliff-craft` and `cliff-craft-daemon` binaries to `/usr/local/bin`.*
+*This command compiles the project and deploys the `cliff-watch` and `cliff-watch-daemon` binaries to `/usr/local/bin`.*
 
 ---
 
@@ -58,22 +58,22 @@ make install
 ### 1. Start the Sentinel
 To start accumulating energy in the background:
 ```bash
-cliff-craft on
+cliff-watch on
 ```
-*Use `cliff-craft off` to stop it at any time.*
+*Use `cliff-watch off` to stop it at any time.*
 
 ### 2. Activate Sovereignty
 In your repository, initialize the thermodynamic customs:
 ```bash
-cliff-craft init
+cliff-watch init
 ```
 *This will automatically install the `pre-commit` and `prepare-commit-msg` hooks that physically block the flow if the energy balance is negative.*
 
 ### 3. Check Your Reserves
 How much attention energy do you have left?
 ```bash
-cliff-craft status   # To check if it's running
-cliff-craft metrics  # To see your kinetic energy
+cliff-watch status   # To check if it's running
+cliff-watch metrics  # To see your kinetic energy
 ```
 
 ---
@@ -81,13 +81,13 @@ cliff-craft metrics  # To see your kinetic energy
 ## � Security & FAQ
 
 ### How does it prevent "Mouse Jigglers" or Scripts?
-Bots generate predictable patterns. Cliff-Craft uses **Normalized Compression Distance (NCD)** to measure movement entropy. If the pattern is mechanical, the battery will not charge. A script would have to simulate human physiology perfectly, which is nearly as difficult as writing the code yourself.
+Bots generate predictable patterns. Cliff-Watch uses **Normalized Compression Distance (NCD)** to measure movement entropy. If the pattern is mechanical, the battery will not charge. A script would have to simulate human physiology perfectly, which is nearly as difficult as writing the code yourself.
 
 ### Can I hack memory to get infinite energy?
 No. The Daemon implements **Causality Validation**. The system cross-references the energy level with real hardware event counts from the kernel (`/dev/input`). If your energy rises without physical movement reported by the driver, the system detects an anomaly and blocks ticket issuance.
 
 ### Is it private? Am I being spied on?
-Absolutely. Cliff-Craft **does not record coordinates or content**. It only processes speed deltas statistically. Data dies in a circular RAM buffer every 5 seconds and is never written to disk or sent over the network.
+Absolutely. Cliff-Watch **does not record coordinates or content**. It only processes speed deltas statistically. Data dies in a circular RAM buffer every 5 seconds and is never written to disk or sent over the network.
 
 ### What happens if someone deletes the Git Hook?
 Locally, a user could try to evade it. However, in a professional environment, the remote server (Oracle) rejects any commit that doesn't include the **Ed25519 Signed Trailer** generated by a legitimate Daemon.
@@ -96,16 +96,16 @@ Locally, a user could try to evade it. However, in a professional environment, t
 
 ## �📂 Project Anatomy
 
-- `cliff-craft-core`: The entropy, thermodynamics, and hardware validation engine.
-- `cliff-craft-cli`: Your interface with the customs and cryptographic identity management.
-- `cliff-craft-daemon`: The invisible sentinel living in the background.
+- `cliff-watch-core`: The entropy, thermodynamics, and hardware validation engine.
+- `cliff-watch-cli`: Your interface with the customs and cryptographic identity management.
+- `cliff-watch-daemon`: The invisible sentinel living in the background.
 
 ---
 
 ## 🔮 Future Roadmap: v2.0 "The All-Seeing Eye"
 
 ### The Challenge: "Proof of Focus"
-In v1.0, Cliff-Craft validates **"Proof of Human Presence."** If you game intensely, you generate valid entropy to commit. This is "working as intended" to prevent bot farms, but it doesn't guarantee you were coding.
+In v1.0, Cliff-Watch validates **"Proof of Human Presence."** If you game intensely, you generate valid entropy to commit. This is "working as intended" to prevent bot farms, but it doesn't guarantee you were coding.
 
 ### The Goal: v2.0
 Implement **"Proof of Focus"**: Energy only charges when the active window is an IDE or Terminal.
@@ -121,7 +121,7 @@ We are looking for Rust + Linux Desktop API experts to build the Daemon's vision
 
 ## 🏛️ The Verdict of Inertia
 
-Cliff-Craft does not ban AI. It **regulates it thermodynamically**. If you use AI to generate code, you must spend enough time curating, reading, and refining it to charge the battery needed to upload it.
+Cliff-Watch does not ban AI. It **regulates it thermodynamically**. If you use AI to generate code, you must spend enough time curating, reading, and refining it to charge the battery needed to upload it.
 
 **If there is no sweat, there is no commit.**
 

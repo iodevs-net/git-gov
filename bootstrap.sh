@@ -1,7 +1,7 @@
 #!/bin/bash
-# cliff-craft Seed Bootstrap v2.1
+# cliff-watch Seed Bootstrap v2.1
 set -e
-echo "🌱 Sembrando el Centinela (cliff-craft)..."
+echo "🌱 Sembrando el Centinela (cliff-watch)..."
 
 # 1. Asegurar Rust
 if ! command -v rustup &> /dev/null; then

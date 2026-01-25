@@ -1,4 +1,4 @@
-# DEEP RESEARCH OMEGA: cliff-craft v2.1 — MASTERPIECE OF IMPLEMENTATION
+# DEEP RESEARCH OMEGA: cliff-watch v2.1 — MASTERPIECE OF IMPLEMENTATION
 
 ## SECTION 1: EXECUTIVE SYNTHESIS (THE BLUFF)
 
@@ -89,9 +89,9 @@ struct FocusCredential {
 
 // Component 3: Commit Wrapper (Git Trailer)
 // Added to every commit message:
-// Cliff-Craft-Witness: <base64_encoded_cnstyle_credential>
-// Cliff-Craft-Signature: <signature_of_commit_hash>
-// Cliff-Craft-Entropy-Score: <0-100>
+// Cliff-Watch-Witness: <base64_encoded_cnstyle_credential>
+// Cliff-Watch-Signature: <signature_of_commit_hash>
+// Cliff-Watch-Entropy-Score: <0-100>
 ```
 
 **Installation Footprint:**
@@ -100,8 +100,8 @@ struct FocusCredential {
 # Installation time: 30 seconds
 # No daemon. No sudo. No compilation.
 
-git clone https://github.com/ionet/cliff-craft
-cd cliff-craft
+git clone https://github.com/ionet/cliff-watch
+cd cliff-watch
 ./install.sh  # Symlinks hook to .git/hooks, done
 ```
 
@@ -112,7 +112,7 @@ cd cliff-craft
 Instead of OS-level device scanning (evdev), we capture at the **Git level** through a minimal hook:
 
 ```rust
-// cliff-craft/src/witness.rs
+// cliff-watch/src/witness.rs
 
 fn capture_focus_credential(commit_hash: &str) -> WitnessCredential {
     // Data sources (NO KEYLOGGING):
@@ -188,7 +188,7 @@ fn calculate_cnstyle_score(credential: &FocusCredential) -> u8 {
 For privacy-preserving audits, use **ZK range proofs**:
 
 ```rust
-// cliff-craft/src/zkp.rs
+// cliff-watch/src/zkp.rs
 // Prove: "This credential has entropy_score >= 60"
 // Without revealing: Which files, what changes, when exactly
 
@@ -202,7 +202,7 @@ fn generate_entropy_zkp(credential: &FocusCredential, threshold: u8)
         .commit(credential.entropy_score as u64, &credential.blinding_factor);
     
     // Prove in ZK: commitment_value >= threshold
-    let mut transcript = Transcript::new(b"cliff-craft-entropy");
+    let mut transcript = Transcript::new(b"cliff-watch-entropy");
     let proof = RangeProofProver::new()
         .prove_range(commitment, threshold, &mut transcript);
     
@@ -293,7 +293,7 @@ To forge a CNS credential with entropy_score >= 70, an AI agent would need to:
 **Goal:** Get a working entropy calculator running in pure Rust, zero OS dependencies.
 
 ```rust
-// cliff-craft/src/main.rs (Entry point)
+// cliff-watch/src/main.rs (Entry point)
 
 use sha2::{Sha256, Digest};
 use ed25519_dalek::{Keypair, Signer};
@@ -363,12 +363,12 @@ fn calculate_cnstyle_score(stats: &DiffStats) -> u8 {
 **Deliverables:**
 - ✅ Core entropy calculator (500 lines of Rust)
 - ✅ Git hook installer
-- ✅ Basic witness logging to `.git/objects/cliff-craft-witness/`
+- ✅ Basic witness logging to `.git/objects/cliff-watch-witness/`
 
 ### Phase 2: Signing & Verification (Week 3)
 
 ```rust
-// cliff-craft/src/crypto.rs
+// cliff-watch/src/crypto.rs
 
 use ed25519_dalek::{Keypair, SecretKey};
 use sha2::{Sha256, Digest};
@@ -399,26 +399,26 @@ fn verify_witness(witness: &WitnessCredential, public_key: &PublicKey) -> bool {
 ```
 
 **Deliverables:**
-- ✅ Key generation (user runs once: `cliff-craft init`)
+- ✅ Key generation (user runs once: `cliff-watch init`)
 - ✅ Witness signing (automatic on every commit)
-- ✅ Verification command (`cliff-craft verify <commit>`)
+- ✅ Verification command (`cliff-watch verify <commit>`)
 
 ### Phase 3: Git Trailer Integration (Week 4)
 
 ```bash
-# cliff-craft/hooks/prepare-commit-msg
+# cliff-watch/hooks/prepare-commit-msg
 
 #!/bin/bash
 # This hook is called after "git commit -m" but before editor opens
 
 commit_hash=$(git rev-parse HEAD 2>/dev/null || echo "new")
-witness=$(cliff-craft calculate-witness $commit_hash)
+witness=$(cliff-watch calculate-witness $commit_hash)
 entropy_score=$(echo $witness | jq '.score')
 
 # Append to commit message
 echo "" >> "$1"
-echo "Cliff-Craft-Witness: $witness" >> "$1"
-echo "Cliff-Craft-Entropy-Score: $entropy_score" >> "$1"
+echo "Cliff-Watch-Witness: $witness" >> "$1"
+echo "Cliff-Watch-Entropy-Score: $entropy_score" >> "$1"
 ```
 
 **Deliverables:**
@@ -428,7 +428,7 @@ echo "Cliff-Craft-Entropy-Score: $entropy_score" >> "$1"
 ### Phase 4: ZK Proof Optional Layer (Week 5-6)
 
 ```rust
-// cliff-craft/src/zkp_verifier.rs (Optional for privacy-preserving audits)
+// cliff-watch/src/zkp_verifier.rs (Optional for privacy-preserving audits)
 
 use bulletproofs::BulletproofGens;
 
@@ -450,7 +450,7 @@ fn verify_entropy_threshold(
 **Optional: Federation**
 ```rust
 // If user consents to external audits:
-// "I want my entropy credentials verified by the cliff-craft network"
+// "I want my entropy credentials verified by the cliff-watch network"
 // This sends ZK proofs (not credentials) to a decentralized verifier network
 ```
 
@@ -511,10 +511,10 @@ These patterns are mathematically hard to simulate in real-time:
 ### Positioning: From "DRM" to "Developer Sovereignty"
 
 **Frame it WRONG:**
-❌ "cliff-craft is a DRM system to prevent AI-generated code"
+❌ "cliff-watch is a DRM system to prevent AI-generated code"
 
 **Frame it RIGHT:**
-✅ "cliff-craft is a **cryptographic attestation system** that lets developers prove their work in an AI-flooded market"
+✅ "cliff-watch is a **cryptographic attestation system** that lets developers prove their work in an AI-flooded market"
 
 **Incentive Structure (Network Effects):**
 
@@ -550,7 +550,7 @@ Level 4: Ecosystem (Micro-economy)
 - Tools: IDE extensions for entropy visualization
 
 **Phase C: Standardization (Year 2)**
-- RFC for Git trailer standard (`Cliff-Craft-*`)
+- RFC for Git trailer standard (`Cliff-Watch-*`)
 - Potential: IETF draft (like Code-Review)
 
 ***
@@ -574,8 +574,8 @@ Level 4: Ecosystem (Micro-economy)
                                         ↓
                         ┌─────────────────────────┐
                         │ Commit with trailer:    │
-                        │ "Cliff-Craft-Witness: ..."  │
-                        │ "Cliff-Craft-Entropy: 78"   │
+                        │ "Cliff-Watch-Witness: ..."  │
+                        │ "Cliff-Watch-Entropy: 78"   │
                         └─────────────────────────┘
                                         ↓
                     ┌───────────────────────────────────────┐
@@ -585,7 +585,7 @@ Level 4: Ecosystem (Micro-economy)
                                         ↓
         ┌───────────────────────────────────────────────────┐
         │  Maintainer Reviews PR                            │
-        │  ├─ cliff-craft verify <commit>                       │
+        │  ├─ cliff-watch verify <commit>                       │
         │  │  Output: ✓ Valid signature, entropy=78/100     │
         │  ├─ Filter: "Only merge entropy >= 65"            │
         │  └─ Optional: ZK proof for privacy audit          │
@@ -605,8 +605,8 @@ Level 4: Ecosystem (Micro-economy)
 
 | Component | Size | Runtime | Dependency |
 |-----------|------|---------|------------|
-| **cliff-craft-core** (entropy calc) | 1.2MB | 5-10ms | None |
-| **cliff-craft-cli** (verification) | 0.8MB | 2ms | libgit2 (system) |
+| **cliff-watch-core** (entropy calc) | 1.2MB | 5-10ms | None |
+| **cliff-watch-cli** (verification) | 0.8MB | 2ms | libgit2 (system) |
 | **vscode-witness extension** (optional) | 0.5MB | <1ms | VSCode API |
 | **Git hooks** | 50KB | <200ms | git (system) |
 | **Total** | **2.5MB** | **~15ms per commit** | **Zero new deps** |
@@ -615,7 +615,7 @@ Level 4: Ecosystem (Micro-economy)
 
 | System | Size | Setup Time | Privacy | Cross-Platform | AI-Resistant |
 |--------|------|-----------|---------|---|---|
-| **cliff-craft (New)** | 2.5MB | 30s | ✅ High | ✅ Yes | ✅ Strong |
+| **cliff-watch (New)** | 2.5MB | 30s | ✅ High | ✅ Yes | ✅ Strong |
 | **Legacy evdev** | 240MB | 8-12m | ❌ Low | ❌ Linux only | ⚠️ Weak |
 | **Keystroke dynamics** | ~50MB | 5m | ❌ None | ✅ Yes | ❌ Spoofable |
 | **Blockchain commits** | ~150MB | 10-15m | ⚠️ Partial | ✅ Yes | ✅ Strong (but wasteful) |
@@ -626,32 +626,32 @@ Level 4: Ecosystem (Micro-economy)
 
 ```bash
 #!/bin/bash
-# cliff-craft-install.sh (Universal: Linux, macOS, Windows+WSL)
+# cliff-watch-install.sh (Universal: Linux, macOS, Windows+WSL)
 
 set -e
 
-echo "🔐 Installing cliff-craft v2.1 (Lightweight Edition)"
+echo "🔐 Installing cliff-watch v2.1 (Lightweight Edition)"
 
 # Step 1: Download prebuilt binary (~2.5MB)
 ARCH=$(uname -m)
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-BINARY_URL="https://releases.ionet.cl/cliff-craft/${OS}-${ARCH}/cliff-craft"
+BINARY_URL="https://releases.ionet.cl/cliff-watch/${OS}-${ARCH}/cliff-watch"
 
-mkdir -p ~/.cliff-craft
-curl -sL "$BINARY_URL" -o ~/.cliff-craft/cliff-craft
-chmod +x ~/.cliff-craft/cliff-craft
+mkdir -p ~/.cliff-watch
+curl -sL "$BINARY_URL" -o ~/.cliff-watch/cliff-watch
+chmod +x ~/.cliff-watch/cliff-watch
 
 # Step 2: Generate user keypair (ed25519)
-~/.cliff-craft/cliff-craft init --name "$(git config user.name)"
+~/.cliff-watch/cliff-watch init --name "$(git config user.name)"
 
 # Step 3: Install git hooks
-git config --global core.hooksPath ~/.cliff-craft/hooks
-cp ~/.cliff-craft/hooks/prepare-commit-msg .git/hooks/ 2>/dev/null || true
+git config --global core.hooksPath ~/.cliff-watch/hooks
+cp ~/.cliff-watch/hooks/prepare-commit-msg .git/hooks/ 2>/dev/null || true
 
 # Step 4: Add to PATH
-echo 'export PATH="$HOME/.cliff-craft:$PATH"' >> ~/.bashrc
+echo 'export PATH="$HOME/.cliff-watch:$PATH"' >> ~/.bashrc
 
-echo "✅ Complete! Try: cliff-craft status"
+echo "✅ Complete! Try: cliff-watch status"
 ```
 
 ***
@@ -668,7 +668,7 @@ echo "✅ Complete! Try: cliff-craft status"
 - **Economically viable** (no daemon overhead, no cloud dependency)
 
 **The 2026 Advantage:**
-In a world where AI can generate code, cliff-craft returns **scarcity and provenance** to human effort. It's not anti-AI; it's *pro-human-attribution*.
+In a world where AI can generate code, cliff-watch returns **scarcity and provenance** to human effort. It's not anti-AI; it's *pro-human-attribution*.
 
 This is the infrastructure layer for **developer sovereignty in the age of large language models.**
 
@@ -682,7 +682,7 @@ This is the infrastructure layer for **developer sovereignty in the age of large
 
 **Estimated time-to-production:** 8-12 weeks. **Total code:** ~5,000 lines of production Rust + ~1,000 lines of TypeScript for IDE integration.
 
-# DEEP RESEARCH OMEGA: cliff-craft v2.1 — TECHNICAL DEEP DIVE & INVESTMENT THESIS
+# DEEP RESEARCH OMEGA: cliff-watch v2.1 — TECHNICAL DEEP DIVE & INVESTMENT THESIS
 
 *Detected: Duplicate query with extended context request. Shifting from architectural overview to **operational implementation + investment mechanics + risk quantification.***
 
@@ -690,7 +690,7 @@ This is the infrastructure layer for **developer sovereignty in the age of large
 
 ## EXECUTIVE BRIEF: THE INVESTMENT VECTOR
 
-**Core Thesis:** cliff-craft is not a developer tool—it's a **market infrastructure play** that creates a new economic layer in Open Source by making human effort cryptographically *provable* and *tradable*.
+**Core Thesis:** cliff-watch is not a developer tool—it's a **market infrastructure play** that creates a new economic layer in Open Source by making human effort cryptographically *provable* and *tradable*.
 
 **Valuation Hypothesis:**
 - **TAM (Total Addressable Market):** $47B (OSS ecosystem value) × 15% (compliance/certification premiums) = **$7B**
@@ -711,7 +711,7 @@ This is the infrastructure layer for **developer sovereignty in the age of large
 | **Enterprise IP liability** | Companies need proof of human authorship | Q1 2026 (insurance pressure) |
 | **Regulatory pressure** | EU AI Act § transparency requirements | Q2 2026 projected |
 
-**The Gap:** There is **zero cryptographic attestation** of human code authorship in production. cliff-craft fills this in 8-12 weeks.
+**The Gap:** There is **zero cryptographic attestation** of human code authorship in production. cliff-watch fills this in 8-12 weeks.
 
 ***
 
@@ -1032,7 +1032,7 @@ Penalty:
 # Maintainer wants to merge PR from unknown contributor
 # Question: Is this human-written code?
 
-$ cliff-craft verify --pr 4521 --repo ionet/cliff-craft
+$ cliff-watch verify --pr 4521 --repo ionet/cliff-watch
 
 ✓ Signature valid (ed25519)
 ✓ Commits authored by: dev@example.com
@@ -1058,7 +1058,7 @@ PR #4521 by @dev_user
 All commits pass entropy verification.
 This PR was created with high probability by a human developer.
 
-View entropy audit: cliff-craft audit --pr 4521
+View entropy audit: cliff-watch audit --pr 4521
 ```
 
 ***
@@ -1187,7 +1187,7 @@ fn detect_temporal_injection(commits: &[Commit]) -> f64 {
 **Attack:** AI trains model to predict what CNS wants, generates code to satisfy it
 
 ```python
-# Attacker trains model on cliff-craft verified commits
+# Attacker trains model on cliff-watch verified commits
 model = train_cns_predictor(verified_commits=10000)
 
 # When generating code, use model to guide generation
@@ -1239,7 +1239,7 @@ fn detect_adversarial_generation(commit: &Commit) -> bool {
 **Deliverable:** Standalone Rust binary that calculates CNS from git history
 
 ```rust
-// cliff-craft/src/bin/entropy.rs
+// cliff-watch/src/bin/entropy.rs
 
 use git2::Repository;
 use sha2::{Sha256, Digest};
@@ -1293,13 +1293,13 @@ fn calculate_cnstyle(repo: &Repository, commit: &Commit) -> CNStyle {
 #!/bin/bash
 
 # Calculate witness
-WITNESS=$(cliff-craft calculate-witness HEAD)
+WITNESS=$(cliff-watch calculate-witness HEAD)
 ENTROPY=$(echo "$WITNESS" | jq '.score')
 
 # Append to commit message
 echo "" >> "$1"
-echo "Cliff-Craft-Score: $ENTROPY" >> "$1"
-echo "Cliff-Craft-Sig: $(echo $WITNESS | cliff-craft sign)" >> "$1"
+echo "Cliff-Watch-Score: $ENTROPY" >> "$1"
+echo "Cliff-Watch-Sig: $(echo $WITNESS | cliff-watch sign)" >> "$1"
 ```
 
 ***
@@ -1308,9 +1308,9 @@ echo "Cliff-Craft-Sig: $(echo $WITNESS | cliff-craft sign)" >> "$1"
 
 **Deliverable:**
 ```bash
-cliff-craft verify <commit>              # Verify single commit
-cliff-craft audit --pr <number>          # Audit full PR
-cliff-craft batch --since "2 days ago"   # Analyze range
+cliff-watch verify <commit>              # Verify single commit
+cliff-watch audit --pr <number>          # Audit full PR
+cliff-watch batch --since "2 days ago"   # Analyze range
 ```
 
 ***
@@ -1320,7 +1320,7 @@ cliff-craft batch --since "2 days ago"   # Analyze range
 **Deliverable:** Real-time entropy score in VSCode
 
 ```typescript
-// cliff-craft-vscode/extension.ts
+// cliff-watch-vscode/extension.ts
 import * as vscode from 'vscode';
 import { spawn } from 'child_process';
 
@@ -1344,8 +1344,8 @@ export function activate(context: vscode.ExtensionContext) {
 **Deliverable:** Bot that adds entropy badge to PRs
 
 ```yaml
-# .github/workflows/cliff-craft-audit.yml
-name: Cliff-Craft Entropy Audit
+# .github/workflows/cliff-watch-audit.yml
+name: Cliff-Watch Entropy Audit
 
 on: [pull_request]
 
@@ -1358,10 +1358,10 @@ jobs:
           fetch-depth: 0
       
       - run: |
-          curl -sL https://releases.ionet.cl/cliff-craft/linux-x64/cliff-craft | sudo tee /usr/local/bin/cliff-craft
-          chmod +x /usr/local/bin/cliff-craft
+          curl -sL https://releases.ionet.cl/cliff-watch/linux-x64/cliff-watch | sudo tee /usr/local/bin/cliff-watch
+          chmod +x /usr/local/bin/cliff-watch
           
-          ENTROPY=$(cliff-craft audit --pr ${{ github.event.number }})
+          ENTROPY=$(cliff-watch audit --pr ${{ github.event.number }})
           
           if [ "$ENTROPY" -gt 65 ]; then
               echo "✅ PASS: Human-certified code"
@@ -1377,7 +1377,7 @@ jobs:
 **Deliverable:** Privacy-preserving audit for enterprises
 
 ```rust
-// cliff-craft/src/zkp.rs
+// cliff-watch/src/zkp.rs
 
 fn generate_entropy_range_proof(
     score: u8,
@@ -1389,7 +1389,7 @@ fn generate_entropy_range_proof(
     let gens = BulletproofGens::new(64, 1);
     let (proof, _) = RangeProof::prove_single(
         &gens,
-        &mut Transcript::new(b"cliff-craft"),
+        &mut Transcript::new(b"cliff-watch"),
         score as u64,
         &blinding_factor,
         64,
@@ -1463,7 +1463,7 @@ Gross Margin: 95%+ (pure software)
 
 ## SECTION 9: COMPETITIVE MOAT
 
-### Why cliff-craft Cannot Be Disrupted
+### Why cliff-watch Cannot Be Disrupted
 
 | Asset | Strength | Time to Replicate |
 |-------|----------|------------------|
@@ -1475,7 +1475,7 @@ Gross Margin: 95%+ (pure software)
 
 **The Moat:** Network effects + first-mover advantage + Git's immutability
 
-Once 10% of OSS uses cliff-craft, 90% will follow (because code on GitHub becomes comparable by entropy score).
+Once 10% of OSS uses cliff-watch, 90% will follow (because code on GitHub becomes comparable by entropy score).
 
 ***
 
@@ -1508,7 +1508,7 @@ Once 10% of OSS uses cliff-craft, 90% will follow (because code on GitHub become
 
 ### The Investment Thesis in One Sentence
 
-*cliff-craft transforms "proof of work" from a mining concept into a **cryptographic attestation system** that returns scarcity to human effort in an age of infinite AI-generated code.*
+*cliff-watch transforms "proof of work" from a mining concept into a **cryptographic attestation system** that returns scarcity to human effort in an age of infinite AI-generated code.*
 
 ***
 

@@ -1,0 +1,32 @@
+[package]
+name = "cliff-watch-daemon"
+version = "0.1.0"
+edition = "2021"
+authors = ["Cliff-Watch Project"]
+description = "Cliff-Watch daemon for continuous monitoring and validation"
+
+[dependencies]
+cliff-watch-core = { path = "../cliff-watch-core" }
+tokio = { workspace = true }
+tokio-util = { version = "0.7", features = ["codec"] }
+futures = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { workspace = true }
+hex = { workspace = true }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+notify = "6.0"
+anyhow = "1.0"
+thiserror = "1.0"
+config = "0.13"
+
+[profile.release]
+opt-level = "z"
+lto = true
+panic = "abort"
+strip = true
+codegen-units = 1
+
+[features]
+default = []
+lean = []

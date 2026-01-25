@@ -1,4 +1,4 @@
-name: Cliff-Craft Verification
+name: Cliff-Watch Verification
 
 on:
   pull_request:
@@ -16,7 +16,7 @@ jobs:
       with:
         fetch-depth: 0 # Important: Fetch full history for proper verification
 
-    # TODO: Replace with official setup-cliff-craft action when available
+    # TODO: Replace with official setup-cliff-watch action when available
     # For now, we assume the binary is available or built here
     # This example shows how to use it if installed
     
@@ -24,14 +24,14 @@ jobs:
       id: verify
       shell: bash
       run: |
-        # In a real workflow, ensure cliff-craft is installed in PATH
-        # ./target/release/cliff-craft verify HEAD --format json > verification.json
+        # In a real workflow, ensure cliff-watch is installed in PATH
+        # ./target/release/cliff-watch verify HEAD --format json > verification.json
         
         # Example output simulation/usage
         echo "Verifying commit $(git rev-parse HEAD)..."
         
         # Uncomment when running with actual binary:
-        # OUTPUT=$(cliff-craft verify HEAD --format json)
+        # OUTPUT=$(cliff-watch verify HEAD --format json)
         # echo "Raw Output: $OUTPUT"
         # STATUS=$(echo "$OUTPUT" | jq -r '.status')
         # if [ "$STATUS" != "verified" ]; then
