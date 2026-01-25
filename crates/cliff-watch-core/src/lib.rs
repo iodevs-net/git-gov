@@ -10,6 +10,7 @@ pub mod mouse_sentinel;
 pub mod stats;
 pub mod complexity;
 pub mod config;
+pub mod ui_templates;
 
 use sha2::{Digest, Sha256};
 use ed25519_dalek::SigningKey;

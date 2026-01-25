@@ -63,24 +63,9 @@ fi
 "#;
     std::fs::write(&prepare_hook_path, prepare_hook_content).map_err(|e| e.to_string())?;
 
-    // 2. Hook de pre-commit (La "Aduana Termodinámica")
+    // 2. Hook de pre-commit (Delegado al módulo UI)
     let pre_hook_path = hooks_dir.join("pre-commit");
-    let pre_hook_content = r#"#!/bin/bash
-# cliff-watch hook: Aduana Termodinámica
-# Bloquea el commit si no hay suficiente energía acumulada.
-
-# El CLI se encarga de calcular el costo, pedir el ticket y GUARDARLO
-cliff-watch verify-work
-if [ $? -ne 0 ]; then
-    echo "--------------------------------------------------------"
-    echo "❌ ERROR: ADUANA TERMODINÁMICA DE CLIFF-CRAFT"
-    echo "Tu reserva de energía kinética es insuficiente para"
-    echo "la complejidad de este código. Dedica más tiempo a la"
-    echo "curaduría manual antes de intentar commitear."
-    echo "--------------------------------------------------------"
-    exit 1
-fi
-"#;
+    let pre_hook_content = crate::ui_templates::render_pre_commit_hook();
     std::fs::write(&pre_hook_path, pre_hook_content).map_err(|e| e.to_string())?;
 
     #[cfg(unix)]
@@ -504,4 +489,4 @@ mod tests {
         let has_trailer = has_trailer(&commit, "cliff-watch-score").unwrap();
         assert!(has_trailer);
     }
-}
+}// Estética verificada por Cliff-Watch
