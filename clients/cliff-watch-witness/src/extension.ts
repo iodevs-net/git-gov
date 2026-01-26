@@ -56,6 +56,10 @@ export function activate(context: vscode.ExtensionContext) {
         return acc + (change.text.length - change.rangeLength);
       }, 0);
 
+      // Actualizar acumuladores de ráfaga
+      editBurstAccumulator += delta;
+      currentEditFile = e.document.fileName;
+
       // CNS v3.0: Detección de Pegado Probable
       // Si un solo cambio inserta más de 30 caracteres, o si la ráfaga es sospechosamente rápida.
       const is_likely_paste = e.contentChanges.some(c => c.text.length > 30);

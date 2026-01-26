@@ -180,4 +180,5 @@ We welcome contributions that improve the accuracy of our metrics or add support
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
-*Built with 🦀 Rust for the Sovereign Developer. 🛡️✨*
+*Built with 🦀 Rust for the Sovereign Developer🛡️✨*
+Leonardo Vergara Marin
