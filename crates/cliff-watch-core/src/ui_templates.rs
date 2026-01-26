@@ -86,6 +86,11 @@ if [ $? -ne 0 ]; then
     echo -e ""
     exit 1
 fi
+
+# v4.0: Captura de evidencia para trailers
+$CLI_CMD inspect &> /dev/null
+
+exit 0
 "#,
         BOLD=BOLD, ITALIC=ITALIC, CYAN=CYAN, VIOLET=VIOLET, 
         GREEN=GREEN, ORANGE=ORANGE, RED=RED, GREY=GREY, NC=NC

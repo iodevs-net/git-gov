@@ -85,6 +85,12 @@ enum Commands {
     },
     /// Verificación termodinámica del trabajo (para hooks)
     VerifyWork,
+    /// Genera la evidencia técnica (trailers) para el commit actual
+    Inspect {
+        /// Ruta al archivo de mensaje de commit (pasado por Git)
+        #[arg()]
+        message_file: Option<String>,
+    },
     /// Gestión de configuración
     Config {
         #[command(subcommand)]
@@ -560,6 +566,46 @@ async fn main() {
                 }
                 _ => {
                     eprintln!("❌ Unexpected response from daemon");
+                    process::exit(1);
+                }
+            }
+        }
+        Commands::Inspect { message_file } => {
+            let repo = match open_repository(Path::new(".")) {
+                Ok(r) => r,
+                Err(e) => {
+                    eprintln!("❌ Error opening repository: {}", e);
+                    process::exit(1);
+                }
+            };
+
+            // 1. Obtener la evidencia del Witness (reseteando el acumulador)
+            match query_daemon(cliff_watch_core::protocol::Request::GetWitness { reset: true }).await {
+                Ok(cliff_watch_core::protocol::Response::Witness { data }) => {
+                    let gov_dir = repo.path().join("cliff-watch");
+                    if !gov_dir.exists() {
+                        let _ = std::fs::create_dir_all(&gov_dir);
+                    }
+                    
+                    let witness_file = gov_dir.join("latest_witness");
+                    if let Err(e) = std::fs::write(&witness_file, &data) {
+                        eprintln!("⚠️ Error saving witness data: {}", e);
+                    } else {
+                        println!("✅ Evidence generated: Cliff-Watch-Witness v2.0");
+                    }
+
+                    // 2. Si se proporciona un archivo de mensaje (Git hook manual), inyectamos ahora
+                    if let Some(msg_file_path) = message_file {
+                        let msg_path = Path::new(&msg_file_path);
+                        if msg_path.exists() {
+                            let _ = Command::new("git")
+                                .args(["interpret-trailers", "--in-place", "--trailer", &format!("Cliff-Watch-Witness: {}", data), &msg_file_path])
+                                .status();
+                        }
+                    }
+                }
+                _ => {
+                    eprintln!("❌ Could not retrieve witness evidence from daemon.");
                     process::exit(1);
                 }
             }
