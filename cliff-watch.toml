@@ -5,8 +5,8 @@
 difficulty = "Normal"
 # Entropía mínima para validar un commit (base 2.5)
 min_entropy = 2.5
-# [NEW v4.2] Modo Auditoría: Si es true, permite commits con warning pero sin bloqueo.
-audit_mode = true
+# [HARDCORE MODE] Modo Auditoría: Si es false, BLOQUEA commits sin energía.
+audit_mode = false
 # [NEW v4.2] Umbrales de Ruido Cognitivo
 pareto_alpha_min = 1.5
 cv_min = 0.15

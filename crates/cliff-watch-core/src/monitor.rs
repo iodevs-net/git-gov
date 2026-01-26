@@ -459,7 +459,7 @@ pub struct AttentionBattery {
 impl AttentionBattery {
     pub fn new() -> Self {
         Self {
-            level: 15.0, // [JUMPSTART v2.1] Iniciamos con energía para validar el primer archivo productivo
+            level: 0.0,
             capacity: 100.0,
             last_decay: SystemTime::now(),
             leak_rate: 0.5,
