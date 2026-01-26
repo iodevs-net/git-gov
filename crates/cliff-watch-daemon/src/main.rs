@@ -84,6 +84,7 @@ async fn main() -> Result<()> {
     let battery_ref = monitor.get_battery_ref();
     let focus_tracker_ref = monitor.get_focus_tracker_ref();
     let events_captured_ref = monitor.get_events_captured_ref();
+    let score_history_ref = monitor.get_score_history_ref();
     
     // Load or create persistent identity
     let signing_key = cliff_watch_core::crypto::load_or_create_identity()
@@ -96,9 +97,12 @@ async fn main() -> Result<()> {
         battery_ref,
         focus_tracker_ref,
         events_captured_ref,
+        score_history_ref,
+        monitor.get_ncd_ref(),
         shutdown.clone(),
         signing_key,
         gov_config.governance.min_entropy,
+        gov_config.governance.audit_mode,
     );
 
     // Start IPC server task

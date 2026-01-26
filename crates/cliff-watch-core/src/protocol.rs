@@ -37,11 +37,12 @@ pub enum Response {
         human_score: f64,
         coupling: f64,
         battery_level: f64,
-        // v2.0 Focus Metrics
         focus_time_mins: f64,
         edit_bursts: usize,
         is_focused: bool,
         zkp_proof: Option<String>,
+        #[serde(default)]
+        score_history: Vec<f64>,
     },
     /// Ticket de atención firmado
     Ticket {

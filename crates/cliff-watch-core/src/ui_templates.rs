@@ -12,7 +12,7 @@ pub const GREY: &str = "\\033[38;5;244m";    // Gris neutro
 pub const NC: &str = "\\033[0m";
 
 /// Genera el contenido del hook pre-commit al estilo Aura Premium.
-pub fn render_pre_commit_hook() -> String {
+pub fn render_pre_commit_hook(audit_mode: bool) -> String {
     format!(
         r#"#!/bin/bash
 # cliff-watch hook: Protocolo de Soberanía Técnica
@@ -110,7 +110,17 @@ if [ $? -ne 0 ]; then
     echo -e "  ${{BOLD}}DEFICIT DETECTED:${{NC}}"
     echo -e "  ${{ITALIC}}${{ORANGE}}Technical focus evidence is below the required sovereignty threshold.${{NC}}"
     echo -e "  This repository requires a human code oversight level: ${{BOLD}}${{CYAN}}High (0.6)${{NC}}"
-    echo -e "  Your current review metric is: ${{BOLD}}${{LABEL_COLOR}}${{HUMAN_LABEL}} (${{SCORE_DISPLAY}})${{NC}}"
+    echo -e "  ${{BOLD}}${{LABEL_COLOR}}${{HUMAN_LABEL}} (${{SCORE_DISPLAY}})${{NC}}"
+    
+    if [ "{AUDIT_MODE}" = "true" ]; then
+        echo -e "  ${{BOLD}}${{ORANGE}}[AUDIT MODE ENABLED]${{NC}} This commit would be blocked in strict mode."
+        echo -e "  Proceeding due to sovereign audit policy."
+        echo -e ""
+        echo -e "  ${{GREY}}──────────────────────────────────────────────────────────────${{NC}}"
+        echo -e ""
+        exit 0
+    fi
+
     echo -e "  This commit was blocked to prevent technical debt and ensure craftsmanship."
     echo -e ""
     echo -e "  ${{BOLD}}GUIDANCE:${{NC}}"
@@ -129,6 +139,7 @@ $CLI_CMD inspect &> /dev/null
 exit 0
 "#,
         BOLD=BOLD, ITALIC=ITALIC, CYAN=CYAN, VIOLET=VIOLET, 
-        GREEN=GREEN, ORANGE=ORANGE, RED=RED, GREY=GREY, NC=NC
+        GREEN=GREEN, ORANGE=ORANGE, RED=RED, GREY=GREY, NC=NC,
+        AUDIT_MODE=audit_mode
     )
 }

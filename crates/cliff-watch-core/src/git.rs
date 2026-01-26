@@ -33,7 +33,7 @@ pub fn has_trailer(commit: &git2::Commit, key: &str) -> Result<bool, String> {
 }
 
 /// Instala los hooks de cliff-watch en el repositorio
-pub fn install_hooks(repo: &Repository) -> Result<(), String> {
+pub fn install_hooks(repo: &Repository, config: &crate::config::GovConfig) -> Result<(), String> {
     let hooks_dir = repo.path().join("hooks");
     if !hooks_dir.exists() {
         std::fs::create_dir_all(&hooks_dir).map_err(|e| e.to_string())?;
@@ -65,7 +65,7 @@ fi
 
     // 2. Hook de pre-commit (Delegado al módulo UI)
     let pre_hook_path = hooks_dir.join("pre-commit");
-    let pre_hook_content = crate::ui_templates::render_pre_commit_hook();
+    let pre_hook_content = crate::ui_templates::render_pre_commit_hook(config.governance.audit_mode);
     std::fs::write(&pre_hook_path, pre_hook_content).map_err(|e| e.to_string())?;
 
     #[cfg(unix)]

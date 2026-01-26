@@ -20,7 +20,7 @@ fn test_cognitive_coupling_logic() {
     
     // estimate_entropic_cost devuelve un valor entre 0.0 y 100.0
     // Normalizamos a 0.0-1.0 para el coupling
-    let entropic_cost = estimate_entropic_cost(complex_code);
+    let entropic_cost = estimate_entropic_cost(complex_code, None);
     let code_comp = entropic_cost / 100.0;
     let motor_ent = 0.55; // Humano: alta variabilidad
     let coupling = calculate_coupling_score(code_comp, motor_ent);

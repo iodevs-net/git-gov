@@ -6,7 +6,7 @@
 //! 2. **GitMonitor**: Captures mouse movements for kinematic analysis.
 
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Component, Path, PathBuf};
 use std::sync::{
     atomic::{AtomicBool, AtomicU64, Ordering},
@@ -572,6 +572,8 @@ pub struct GitMonitor {
     watch_root: PathBuf,
     min_entropy: f64,
     focus_tracker: Arc<RwLock<FocusTracker>>, // Tracker de foco compartido
+    score_history: Arc<RwLock<VecDeque<f64>>>,
+    latest_ncd: Arc<RwLock<f64>>,
 }
 
 impl GitMonitor {
@@ -598,6 +600,8 @@ impl GitMonitor {
             watch_root,
             min_entropy: config.min_entropy,
             focus_tracker: Arc::new(RwLock::new(FocusTracker::new())),
+            score_history: Arc::new(RwLock::new(VecDeque::with_capacity(50))),
+            latest_ncd: Arc::new(RwLock::new(0.5)), // Start neutral to avoid bias
         })
     }
 
@@ -623,6 +627,14 @@ impl GitMonitor {
 
     pub fn get_events_captured_ref(&self) -> Arc<RwLock<usize>> {
         self.events_captured.clone()
+    }
+
+    pub fn get_score_history_ref(&self) -> Arc<RwLock<VecDeque<f64>>> {
+        self.score_history.clone()
+    }
+
+    pub fn get_ncd_ref(&self) -> Arc<RwLock<f64>> {
+        self.latest_ncd.clone()
     }
 
     pub async fn start(mut self) -> Result<(), GitMonitorError> {
@@ -708,6 +720,27 @@ impl GitMonitor {
         }
     }
 
+    async fn get_repo_context_sample(&self) -> String {
+        use tokio::fs;
+        let mut context = String::new();
+        let mut count = 0;
+
+        if let Ok(mut entries) = fs::read_dir(&self.watch_root).await {
+            while let Ok(Some(entry)) = entries.next_entry().await {
+                if count >= 8 { break; } // Muestra de 8 archivos max
+                let path = entry.path();
+                if path.extension().map_or(false, |e| e == "rs") {
+                    if let Ok(content) = fs::read_to_string(path).await {
+                        context.push_str(&content);
+                        context.push('\n');
+                        count += 1;
+                    }
+                }
+            }
+        }
+        context
+    }
+
     async fn handle_file_event(&mut self, event: EditEvent) {
         if event.kind == EditKind::Delete {
             return;
@@ -717,10 +750,34 @@ impl GitMonitor {
         
         // [LEAN] Solo leemos archivos pequeños o fragmentos para evitar lag de IO
         if let Ok(content) = tokio::fs::read_to_string(&full_path).await {
-            use crate::complexity::estimate_entropic_cost;
+            use crate::complexity::{estimate_entropic_cost, calculate_compression_ratio, calculate_ncd_against_context};
             use crate::stats::calculate_coupling_score;
 
-            let entropic_cost = estimate_entropic_cost(&content);
+            let compression_ratio = calculate_compression_ratio(&content);
+            
+            // Novedad real contra el contexto del repositorio
+            let repo_context = self.get_repo_context_sample().await;
+            let ncd_novelty = if !repo_context.is_empty() {
+                calculate_ncd_against_context(&content, &repo_context)
+            } else {
+                compression_ratio // Fallback si el repo está vacío
+            };
+
+            // Detección de Copy-Paste / Boilerplate masivo
+            if ncd_novelty < 0.15 {
+                warn!(
+                    "⚠️  PASTE DETECTED: {:?} novelty score {:.2} (85%+ similar to existing code)",
+                    event.rel_path.file_name().unwrap_or_default(),
+                    ncd_novelty
+                );
+            }
+
+            if let Ok(mut latest) = self.latest_ncd.write() {
+                // Promedio móvil exponencial (EMA) usando Novedad (Novelty)
+                *latest = (*latest * 0.8) + (ncd_novelty * 0.2);
+            }
+
+            let entropic_cost = estimate_entropic_cost(&content, Some(&full_path));
             
             // Obtenemos la entropía motora actual (usamos velocity_entropy como proxy)
             let motor_entropy = self.latest_metrics.read()
@@ -798,7 +855,26 @@ impl GitMonitor {
                 }
 
                 if let Ok(mut latest) = self.latest_metrics.write() {
-                    *latest = Some(metrics);
+                     *latest = Some(metrics.clone());
+                }
+
+                let code_ncd = self.latest_ncd.read().map(|v| *v).unwrap_or(0.2);
+
+                // Calcular Score Humano para el historial
+                // Usamos una aproximación basada en métricas actuales para el sparkline
+                let h_score = crate::stats::calculate_human_score(
+                    metrics.burstiness,
+                    code_ncd,
+                    0.0, // Focus handled separately in battery
+                    events,
+                    false
+                );
+                
+                if let Ok(mut history) = self.score_history.write() {
+                    history.push_back(h_score);
+                    if history.len() > 50 {
+                        history.pop_front();
+                    }
                 }
             }
             Err(e) => {

@@ -44,7 +44,7 @@ proptest! {
     /// Cualquier string, por muy caótico o largo que sea, debe tener un costo finito y acotado.
     #[test]
     fn entropic_cost_is_bounded(s in ".{0,10000}") {
-        let cost = estimate_entropic_cost(&s);
+        let cost = estimate_entropic_cost(&s, None);
         prop_assert!(cost >= 0.0);
         prop_assert!(cost <= 100.0, "Cost exceeded limit: {}", cost);
     }
@@ -53,9 +53,9 @@ proptest! {
     /// Pequeños cambios en el código no deben causar saltos masivos en el costo.
     #[test]
     fn entropic_cost_stability(s in ".{100,500}") {
-        let cost1 = estimate_entropic_cost(&s);
+        let cost1 = estimate_entropic_cost(&s, None);
         let s2 = format!("{} ", s); // Añadimos un espacio
-        let cost2 = estimate_entropic_cost(&s2);
+        let cost2 = estimate_entropic_cost(&s2, None);
         
         let diff = (cost1 - cost2).abs();
         prop_assert!(diff < 5.0, "Cost is unstable! Diff: {} for similar strings", diff);

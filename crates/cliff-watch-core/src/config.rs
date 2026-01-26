@@ -15,6 +15,9 @@ pub struct GovConfig {
 pub struct GovernanceConfig {
     pub min_entropy: f64,
     pub difficulty: String,
+    pub pareto_alpha_min: f64,
+    pub cv_min: f64,
+    pub audit_mode: bool,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -30,6 +33,9 @@ impl Default for GovernanceConfig {
         Self {
             min_entropy: 2.5,
             difficulty: "Normal".to_string(),
+            pareto_alpha_min: 1.5,
+            cv_min: 0.15,
+            audit_mode: false,
         }
     }
 }
@@ -45,11 +51,23 @@ impl Default for MonitorConfigDto {
     }
 }
 
+impl Default for GovConfig {
+    fn default() -> Self {
+        Self {
+            governance: Default::default(),
+            monitoring: Default::default(),
+        }
+    }
+}
+
 impl GovConfig {
     pub fn load() -> Result<Self, config::ConfigError> {
         let builder = Config::builder()
             .set_default("governance.min_entropy", 2.5)?
             .set_default("governance.difficulty", "Normal")?
+            .set_default("governance.pareto_alpha_min", 1.5)?
+            .set_default("governance.cv_min", 0.15)?
+            .set_default("governance.audit_mode", false)?
             .set_default("monitoring.watch_root", ".")?
             .set_default("monitoring.debounce_window_ms", 500)?
             .set_default("monitoring.ignore_top_level_dirs", vec![".git", "target", "node_modules"])?

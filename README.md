@@ -63,6 +63,30 @@ cliff-watch init  # Installs the thermodynamic customs in your repo
 
 ---
 
+## 🧪 Algorithmic Transparency (CNS v3.0)
+
+Cliff-Watch is not a black box. We use standard Information Theory metrics to validate human presence.
+
+### 1. Burstiness Index ($B$)
+Humans do not type at constant intervals. We think, then burst.
+$$B = \frac{\sigma - \mu}{\sigma + \mu}$$
+*   **Target:** $B > -0.5$ (Fractal/Bursty behavior)
+*   **Bot:** $B \approx -1.0$ (Metronomic/Regular behavior)
+
+### 2. Normalized Compression Distance ($NCD$)
+Measures the novelty of your code.
+$$NCD(x, y) = \frac{C(xy) - \min(C(x), C(y))}{\max(C(x), C(y))}$$
+*   Where $C(x)$ is the compressed size using `zstd`.
+*   **Injection:** $NCD \approx 0$ (High repetition)
+*   **Creation:** $NCD > 0.3$ (Novel entropy)
+
+### 3. Cognitive-Motor Coupling ($\Phi$)
+The ultimate test of craftsmanship.
+$$\Phi = 1 - |H_{code} - E_{motor}|$$
+We verify that the complexity of the code change ($H_{code}$) matches the spent biological energy ($E_{motor}$).
+
+---
+
 ## 🏛️ Architecture & Privacy
 
 Designed with a **Local-First** philosophy:

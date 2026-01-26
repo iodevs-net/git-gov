@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::sync::{Arc, RwLock};
 use tokio::net::UnixListener;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -15,17 +16,20 @@ use cliff_watch_core::focus_session::FocusTracker;
 use cliff_watch_core::git::WitnessData;
 use cliff_watch_core::crypto::zkp::HumanityProof;
 
-    pub struct IpcServer {
+pub struct IpcServer {
     socket_path: String,
     metrics: Arc<RwLock<Option<KinematicMetrics>>>,
     coupling_ref: Arc<RwLock<f64>>,
     battery_ref: Arc<RwLock<AttentionBattery>>,
     focus_tracker: Arc<RwLock<FocusTracker>>,
     events_captured: Arc<RwLock<usize>>,
+    score_history_ref: Arc<RwLock<VecDeque<f64>>>,
+    ncd_ref: Arc<RwLock<f64>>,
     shutdown: CancellationToken,
     start_time: std::time::Instant,
     signing_key: Arc<cliff_watch_core::crypto::SigningKey>,
     min_entropy: f64,
+    audit_mode: bool,
 }
 
 impl IpcServer {
@@ -36,9 +40,12 @@ impl IpcServer {
         battery_ref: Arc<RwLock<AttentionBattery>>,
         focus_tracker: Arc<RwLock<FocusTracker>>,
         events_captured: Arc<RwLock<usize>>,
+        score_history_ref: Arc<RwLock<VecDeque<f64>>>,
+        ncd_ref: Arc<RwLock<f64>>,
         shutdown: CancellationToken,
         signing_key: cliff_watch_core::crypto::SigningKey,
         min_entropy: f64,
+        audit_mode: bool,
     ) -> Self {
         let verifying_key = signing_key.verifying_key();
         
@@ -57,10 +64,13 @@ impl IpcServer {
             battery_ref,
             focus_tracker,
             events_captured,
+            score_history_ref,
+            ncd_ref,
             shutdown,
             start_time: std::time::Instant::now(),
             signing_key: Arc::new(signing_key),
             min_entropy,
+            audit_mode,
         }
     }
 
@@ -86,6 +96,8 @@ impl IpcServer {
                             let battery_lock = self.battery_ref.clone();
                             let focus_tracker_lock = self.focus_tracker.clone();
                             let events_captured_lock = self.events_captured.clone();
+                            let score_history_lock = self.score_history_ref.clone();
+                            let ncd_lock = self.ncd_ref.clone();
                             let start_time = self.start_time;
                             let signing_key_lock = self.signing_key.clone();
                             let difficulty_factor = self.min_entropy / 2.5;
@@ -117,16 +129,27 @@ impl IpcServer {
 
                                         let coupling = coupling_lock.read().map(|g| *g).unwrap_or(1.0);
                                         let battery_level = battery_lock.read().map(|g| g.level).unwrap_or(0.0);
+                                        
+                                        let history = if let Ok(h) = score_history_lock.read() {
+                                            h.iter().cloned().collect()
+                                        } else {
+                                            Vec::new()
+                                        };
+
+                                        // LEER CODE NCD (Real Zstd Compression)
+                                        let code_ncd = ncd_lock.read().map(|v| *v).unwrap_or(0.2);
 
                                         if let Ok(m_guard) = metrics_lock.read() {
-                                            let (burstiness, ncd, is_synthetic_kinematic) = if let Some(m) = m_guard.as_ref() {
+                                            let (burstiness, _kinematic_ncd, is_synthetic_kinematic) = if let Some(m) = m_guard.as_ref() {
                                                 (m.burstiness, m.ncd, m.is_synthetic)
                                             } else {
                                                 (0.0, 0.5, false) // Valores base
                                             };
 
                                             let is_synthetic = is_synthetic_focus || is_synthetic_kinematic;
-                                            let human_score = calculate_human_score(burstiness, ncd, focus_time_mins, nav_events, is_synthetic);
+                                            
+                                            // Usamos code_ncd para el Human Score (Anti-Paste)
+                                            let human_score = calculate_human_score(burstiness, code_ncd, focus_time_mins, nav_events, is_synthetic);
                                             
                                             // Generar ZKP si el score es humano (>= threshold)
                                             let zkp_proof = if human_score >= 0.5 {
@@ -148,6 +171,7 @@ impl IpcServer {
                                                     edit_bursts,
                                                     is_focused,
                                                     zkp_proof: zkp_proof.map(|_| "ZKP_ACTIVE_B64_PLACEHOLDER".to_string()),
+                                                    score_history: history,
                                                 }
                                             } else {
                                                 Response::Metrics {
@@ -161,6 +185,7 @@ impl IpcServer {
                                                     edit_bursts,
                                                     is_focused,
                                                     zkp_proof: zkp_proof.map(|_| "ZKP_ACTIVE_B64_PLACEHOLDER".to_string()),
+                                                    score_history: history,
                                                 }
                                             }
                                         } else {
@@ -179,6 +204,18 @@ impl IpcServer {
                                                 success: true,
                                                 signature,
                                                 message: "Ticket issued. Thermodynamic balance verified.".to_string(),
+                                            }
+                                        } else if self.audit_mode {
+                                            // AUDIT MODE: Permitir commit pero con advertencia (Soft Enforcement)
+                                            let message = format!("AUDIT:cost={:.2}:ts={}", cost, start_time.elapsed().as_secs());
+                                            let signature = cliff_watch_core::crypto::sign_data(&signing_key_lock, message.as_bytes()).ok();
+                                            Response::Ticket {
+                                                success: true,
+                                                signature,
+                                                message: format!(
+                                                    "AUDIT WARNING: Battery at {:.2}. Threshold reached due to Audit Mode. Please focus more next time!",
+                                                    battery.level
+                                                ),
                                             }
                                         } else {
                                             Response::Ticket {
