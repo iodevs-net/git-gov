@@ -574,6 +574,7 @@ pub struct GitMonitor {
     focus_tracker: Arc<RwLock<FocusTracker>>, // Tracker de foco compartido
     score_history: Arc<RwLock<VecDeque<f64>>>,
     latest_ncd: Arc<RwLock<f64>>,
+    repo_context_cache: Arc<RwLock<(SystemTime, String)>>,
 }
 
 impl GitMonitor {
@@ -602,6 +603,7 @@ impl GitMonitor {
             focus_tracker: Arc::new(RwLock::new(FocusTracker::new())),
             score_history: Arc::new(RwLock::new(VecDeque::with_capacity(50))),
             latest_ncd: Arc::new(RwLock::new(0.5)), // Start neutral to avoid bias
+            repo_context_cache: Arc::new(RwLock::new((UNIX_EPOCH, String::new()))),
         })
     }
 
@@ -720,7 +722,16 @@ impl GitMonitor {
         }
     }
 
-    async fn get_repo_context_sample(&self) -> String {
+    async fn get_repo_context_cached(&self) -> String {
+        const CACHE_TTL: Duration = Duration::from_secs(300); // 5 min
+        
+        if let Ok(cache) = self.repo_context_cache.read() {
+            if cache.0.elapsed().unwrap_or(CACHE_TTL) < CACHE_TTL && !cache.1.is_empty() {
+                return cache.1.clone(); // Cache hit
+            }
+        }
+        
+        // Cache miss: regenerar
         use tokio::fs;
         let mut context = String::new();
         let mut count = 0;
@@ -738,6 +749,11 @@ impl GitMonitor {
                 }
             }
         }
+
+        if let Ok(mut cache) = self.repo_context_cache.write() {
+            *cache = (SystemTime::now(), context.clone());
+        }
+        
         context
     }
 
@@ -755,20 +771,28 @@ impl GitMonitor {
 
             let compression_ratio = calculate_compression_ratio(&content);
             
-            // Novedad real contra el contexto del repositorio
-            let repo_context = self.get_repo_context_sample().await;
+            // Novedad real contra el contexto del repositorio (Caché v5.2)
+            let repo_context = self.get_repo_context_cached().await;
             let ncd_novelty = if !repo_context.is_empty() {
                 calculate_ncd_against_context(&content, &repo_context)
             } else {
                 compression_ratio // Fallback si el repo está vacío
             };
 
-            // Detección de Copy-Paste / Boilerplate masivo
-            if ncd_novelty < 0.15 {
+            // Detección de Copy-Paste / Boilerplate masivo con Threshold Variable
+            let paste_threshold = match full_path.extension().and_then(|e| e.to_str()) {
+                Some("rs") => 0.15,   // Rust: estricto
+                Some("toml") => 0.10, // Config: muy estricto
+                Some("md") => 0.25,   // Docs: más permisivo
+                _ => 0.15,
+            };
+
+            if ncd_novelty < paste_threshold {
                 warn!(
-                    "⚠️  PASTE DETECTED: {:?} novelty score {:.2} (85%+ similar to existing code)",
+                    "⚠️  PASTE DETECTED: {:?} novelty score {:.2} (Target Threshold: {:.2})",
                     event.rel_path.file_name().unwrap_or_default(),
-                    ncd_novelty
+                    ncd_novelty,
+                    paste_threshold
                 );
             }
 

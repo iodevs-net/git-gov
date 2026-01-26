@@ -3,6 +3,7 @@
 //! Utiliza Zstd para estimar la complejidad algorítmica (Entropía de Kolmogorov).
 
 use zstd::stream::encode_all;
+#[cfg(feature = "ast-analysis")]
 use syn::{parse_file, Item};
 use std::path::Path;
 
@@ -51,7 +52,8 @@ pub fn calculate_compression_ratio(code: &str) -> f64 {
     (compressed.len() as f64 / bytes.len() as f64).min(1.0)
 }
 
-/// Analiza la densidad semántica de código Rust mediante AST
+/// Analiza la densidad semántica de código Rust mediante AST (Pesado)
+#[cfg(feature = "ast-analysis")]
 fn analyze_rust_semantics(code: &str) -> f64 {
     match parse_file(code) {
         Ok(file) => {
@@ -66,6 +68,18 @@ fn analyze_rust_semantics(code: &str) -> f64 {
         },
         Err(_) => 0.0, // Rust inválido o fragmento incompleto
     }
+}
+
+/// Analiza la densidad semántica de código Rust mediante heurística ligera (Rápido)
+#[cfg(not(feature = "ast-analysis"))]
+fn analyze_rust_semantics(code: &str) -> f64 {
+    // Fallback: contamos palabras clave clave (heurística sub-lineal)
+    let indicators = ["fn ", "struct ", "enum ", "impl ", "trait "];
+    let mut count = 0;
+    for &ind in &indicators {
+        count += code.matches(ind).count();
+    }
+    (count as f64 * SEMANTIC_ITEM_WEIGHT).min(MAX_SEMANTIC_SCORE)
 }
 
 /// Heurística genérica para archivos no-Rust
