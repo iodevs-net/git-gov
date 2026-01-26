@@ -505,15 +505,15 @@ impl AttentionBattery {
     pub fn charge_focus(&mut self, focus_duration: Duration, edit_burst_count: usize, navigation_events: usize) {
         self.apply_decay();
         
-        // Tiempo de foco activo carga linealmente (1 min focus = 5 pts)
-        let focus_charge = (focus_duration.as_secs_f64() / 60.0) * 5.0;
+        // Tiempo de foco activo carga linealmente (1 min focus = 10 pts)
+        let focus_charge = (focus_duration.as_secs_f64() / 60.0) * 10.0;
         
         // Bonus por ediciones reales (prueba de interacción)
         // Usamos sqrt para recompensa incremental decreciente
-        let edit_bonus = (edit_burst_count as f64).sqrt() * 2.0;
+        let edit_bonus = (edit_burst_count as f64).sqrt() * 5.0;
         
         // Bonus por navegación (lectura activa: scroll, goto definition, etc.)
-        let nav_bonus = (navigation_events as f64) * 0.5;
+        let nav_bonus = (navigation_events as f64) * 2.0;
         
         let total_charge = focus_charge + edit_bonus + nav_bonus;
         self.level = (self.level + total_charge).min(self.capacity);
@@ -686,8 +686,8 @@ impl GitMonitor {
                 SensorEvent::EditBurst { file_path, chars_delta, .. } => {
                     tracker.edit_burst(&file_path, chars_delta);
                 }
-                SensorEvent::Navigation { file_path, nav_type, .. } => {
-                    tracker.navigation(&file_path);
+                SensorEvent::Navigation { file_path, nav_type, timestamp_ms, .. } => {
+                    tracker.navigation(&file_path, timestamp_ms);
                     if nav_type == NavigationType::FileSwitch {
                          info!("Switched to file: {}", file_path);
                     }
@@ -746,6 +746,9 @@ impl GitMonitor {
             }
 
             if has_energy {
+                if let Ok(mut tracker) = self.focus_tracker.write() {
+                    tracker.mark_as_productive(full_path.clone());
+                }
                 info!(
                     "File change validated (Energy Balance): {:?} | Cost: {:.2} | Coupling: {:.2}",
                     event.rel_path.file_name().unwrap_or_default(),

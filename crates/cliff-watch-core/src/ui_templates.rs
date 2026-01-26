@@ -29,8 +29,10 @@ RED='{RED}'
 GREY='{GREY}'
 NC='{NC}'
 
-# Identificamos archivos en el área de preparación (staged)
+# Identificamos componentes del espacio de trabajo
 STAGED_FILES=$(git diff --cached --name-only)
+WORKING_FILES=$(git diff --name-only)
+UNTRACKED_FILES=$(git ls-files --others --exclude-standard)
 
 # Verificación de Binario
 CLI_CMD="cliff-watch"
@@ -50,12 +52,12 @@ if [ $? -ne 0 ]; then
     echo -e "  ${{VIOLET}}│${{NC}}  ${{BOLD}}${{CYAN}}CLIFF-WATCH${{NC}}  ${{GREY}}// Governance Protocol v3.5${{NC}}                  ${{VIOLET}}│${{NC}}"
     echo -e "  ${{VIOLET}}└────────────────────────────────────────────────────────────┘${{NC}}"
     echo -e ""
-    echo -e "${{CYAN}}    ██████╗ ██╗     ██╗███████╗███████╗    ${{BOLD}}${{VIOLET}}  | \__/ | ${{NC}}"
-    echo -e "${{CYAN}}    ██╔═══╝ ██║     ██║██╔════╝██╔════╝    ${{BOLD}}${{VIOLET}}  | o  o | ${{NC}}"
-    echo -e "${{CYAN}}    ██║     ██║     ██║█████╗  █████╗          ${{NC}}"
-    echo -e "${{CYAN}}    ██║     ██║     ██║██╔══╝  ██╔══╝          ${{NC}}"
-    echo -e "${{CYAN}}    ██████╗ ███████╗██║██║     ██║            ${{NC}}"
-    echo -e "${{CYAN}}    ╚═════╝ ╚══════╝╚═╝╚═╝     ╚═╝            ${{NC}}"
+    echo -e "${{CYAN}}    ██████╗ ██╗     ██╗███████╗███████╗  ${{BOLD}}"
+    echo -e "${{CYAN}}    ██╔═══╝ ██║     ██║██╔════╝██╔════╝  ${{BOLD}}"
+    echo -e "${{CYAN}}    ██║     ██║     ██║█████╗  █████╗    ${{NC}}"
+    echo -e "${{CYAN}}    ██║     ██║     ██║██╔══╝  ██╔══╝    ${{NC}}"
+    echo -e "${{CYAN}}    ██████╗ ███████╗██║██║     ██║   ${{NC}}${{VIOLET}} | \__/ | ${{NC}}"
+    echo -e "${{CYAN}}    ╚═════╝ ╚══════╝╚═╝╚═╝     ╚═╝   ${{NC}}${{VIOLET}} | o  o | ${{NC}}"
     echo -e ""
     echo -e "${{VIOLET}}    ██╗    ██╗ █████╗ ████████╗ ██████╗██╗  ██╗${{NC}}"
     echo -e "${{VIOLET}}    ██║    ██║██╔══██╗╚══██╔══╝██╔════╝██║  ██║${{NC}}"
@@ -68,13 +70,47 @@ if [ $? -ne 0 ]; then
     echo -e "  ${{GREY}}Session:${{NC}}  $(date +'%H:%M:%S @ %Y-%m-%d')"
     echo -e "  ${{GREY}}Status:${{NC}}   ${{RED}}INTERRUPTED${{NC}}"
     echo -e ""
-    echo -e "  ${{BOLD}}STAGED COMPONENTS:${{NC}}"
-    while read -r file; do
-        if [ ! -z "$file" ]; then echo -e "  ${{GREEN}}›${{NC}} ${{GREY}}$file${{NC}}"; fi
-    done <<< "$STAGED_FILES"
-    echo -e ""
+    if [ ! -z "$STAGED_FILES" ]; then
+        echo -e "  ${{BOLD}}STAGED COMPONENTS:${{NC}}"
+        while read -r file; do
+            if [ ! -z "$file" ]; then echo -e "  ${{GREEN}}›${{NC}} ${{GREY}}$file${{NC}}"; fi
+        done <<< "$STAGED_FILES"
+        echo -e ""
+    fi
+
+    if [ ! -z "$WORKING_FILES" ]; then
+        echo -e "  ${{BOLD}}UNSTAGED MODIFICATIONS:${{NC}}"
+        while read -r file; do
+            if [ ! -z "$file" ]; then echo -e "  ${{VIOLET}}›${{NC}} ${{GREY}}$file${{NC}}"; fi
+        done <<< "$WORKING_FILES"
+        echo -e ""
+    fi
+
+    if [ ! -z "$UNTRACKED_FILES" ]; then
+        echo -e "  ${{BOLD}}UNTRACKED ARCHIVES:${{NC}}"
+        while read -r file; do
+            if [ ! -z "$file" ]; then echo -e "  ${{ORANGE}}›${{NC}} ${{GREY}}$file${{NC}}"; fi
+        done <<< "$UNTRACKED_FILES"
+        echo -e ""
+    fi
+    SCORE_VAL=$($CLI_CMD metrics --short 2>/dev/null || echo "0.00")
+    
+    # Qualitative Mapping (Humanized Governance)
+    HUMAN_LABEL="Very Low"
+    LABEL_COLOR="${{RED}}"
+    # Formatear a un decimal para la visualización (forzando locale C)
+    SCORE_DISPLAY=$(LC_NUMERIC=C printf "%.1f" $SCORE_VAL)
+    
+    if (( $(echo "$SCORE_VAL >= 0.80" | bc -l) )); then HUMAN_LABEL="Very High"; LABEL_COLOR="${{GREEN}}";
+    elif (( $(echo "$SCORE_VAL >= 0.60" | bc -l) )); then HUMAN_LABEL="High"; LABEL_COLOR="${{GREEN}}";
+    elif (( $(echo "$SCORE_VAL >= 0.40" | bc -l) )); then HUMAN_LABEL="Medium"; LABEL_COLOR="${{ORANGE}}";
+    elif (( $(echo "$SCORE_VAL >= 0.20" | bc -l) )); then HUMAN_LABEL="Low"; LABEL_COLOR="${{RED}}";
+    fi
+
     echo -e "  ${{BOLD}}DEFICIT DETECTED:${{NC}}"
     echo -e "  ${{ITALIC}}${{ORANGE}}Technical focus evidence is below the required sovereignty threshold.${{NC}}"
+    echo -e "  This repository requires a human code oversight level: ${{BOLD}}${{CYAN}}High (0.6)${{NC}}"
+    echo -e "  Your current review metric is: ${{BOLD}}${{LABEL_COLOR}}${{HUMAN_LABEL}} (${{SCORE_DISPLAY}})${{NC}}"
     echo -e "  This commit was blocked to prevent technical debt and ensure craftsmanship."
     echo -e ""
     echo -e "  ${{BOLD}}GUIDANCE:${{NC}}"

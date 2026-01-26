@@ -5,3 +5,5 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc fe42c21497a71c10f84b5c3686f7c72dfb43fee0dce0216862c10e4c06277d0e # shrinks to data = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.074985830957883]
+cc 02a3902c78e554da82d73dc0f780de8f850d8e3f0842058a0963fe33d7620c62 # shrinks to burstiness = 0.9170193584383806, ncd = 0.9041723538844979
+cc 06fef365971304534e6bd27d3ff240296d326edf7e48d53ed050ebcd1105b1fb # shrinks to burstiness = -0.8164239397148784, ncd = 0.0

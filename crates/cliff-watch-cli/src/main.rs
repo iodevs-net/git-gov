@@ -291,14 +291,27 @@ async fn main() {
                         println!("Usa 'cliff-watch status' para verificar.");
                     },
                     Err(_) => {
-                        // Reintento con path explícito por si no está en PATH todavía
-                        match Command::new("/usr/local/bin/cliff-watch-daemon")
+                        // Reintento con path local (target/debug) o global estándar
+                        let local_path = Path::new("target/debug/cliff-watch-daemon");
+                        let bin_path = if local_path.exists() {
+                            "target/debug/cliff-watch-daemon"
+                        } else {
+                            "/usr/local/bin/cliff-watch-daemon"
+                        };
+
+                        match Command::new(bin_path)
                             .stdin(Stdio::null())
                             .stdout(Stdio::null())
                             .stderr(Stdio::null())
                             .spawn() {
-                                Ok(_) => println!("✅ Centinela activado en background."),
-                                Err(e) => eprintln!("❌ Error al encender el centinela: {}. ¿Está instalado?", e),
+                                Ok(_) => {
+                                    println!("✅ Centinela activado en background ({}).", bin_path);
+                                    println!("Usa 'cliff-watch status' para verificar.");
+                                },
+                                Err(e) => {
+                                    eprintln!("❌ Error al encender el centinela: {}. ¿Está instalado?", e);
+                                    process::exit(1);
+                                }
                             }
                     }
                 }

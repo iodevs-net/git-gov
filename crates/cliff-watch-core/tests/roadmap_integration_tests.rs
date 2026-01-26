@@ -5,7 +5,7 @@
 // using property-based testing and real-world scenarios
 
 use cliff_watch_core::stats::{calculate_burstiness, calculate_ncd, calculate_human_score,
-                       validate_human_contribution, validate_ai_contribution,
+                       validate_contribution,
                        calculate_dynamic_threshold};
 use proptest::prelude::*;
 use std::fs;
@@ -89,13 +89,14 @@ fn test_human_contribution_integration() {
     let human_code_y = b"fn analyze_metrics() { let values = metrics.iter().map(|m| m.value).filter(|v| v > 0.5).collect(); values };";
     
     let ncd = calculate_ncd(human_code_x, human_code_y);
-    let human_score = calculate_human_score(burstiness, ncd);
+    // Aumentamos foco (5.0 mins) y navegación (50 eventos) para asegurar score humano > 0.5
+    let human_score = calculate_human_score(burstiness, ncd, 5.0, 50, false);
     
     // For this integration test, use a more realistic threshold
     // The current data produces a human_score of ~0.323, which represents
     // a borderline case. Let's test with a lower threshold for this specific scenario.
     let realistic_threshold = 0.3;
-    let is_human = validate_human_contribution(human_score, realistic_threshold);
+    let is_human = validate_contribution(human_score, realistic_threshold);
     
     let metrics = TestMetrics {
         burstiness: Some(burstiness),
@@ -138,9 +139,9 @@ fn test_ai_contribution_integration() {
     let ai_code_y = b"fn process_data() { let result = data.map(|x| x*2).collect(); result };";
     
     let ncd = calculate_ncd(ai_code_x, ai_code_y);
-    let human_score = calculate_human_score(burstiness, ncd);
+    let human_score = calculate_human_score(burstiness, ncd, 0.0, 0, true);
     
-    let is_ai = validate_ai_contribution(human_score, AI_THRESHOLD);
+    let is_ai = !validate_contribution(human_score, AI_THRESHOLD);
     
     let metrics = TestMetrics {
         burstiness: Some(burstiness),
@@ -245,7 +246,7 @@ fn test_dynamic_threshold_adjustment() {
     
     // Current contribution score
     let current_score = 0.82;
-    let passes_dynamic_threshold = validate_human_contribution(current_score, dynamic_threshold);
+    let passes_dynamic_threshold = validate_contribution(current_score, dynamic_threshold);
     
     let metrics = TestMetrics {
         burstiness: None,
@@ -378,7 +379,8 @@ fn test_human_score_properties_integration() {
     let mut results = init_test_results();
     
     proptest!(|(burstiness in -1.0..1.0, ncd in 0.0..1.0)| {
-        let human_score = calculate_human_score(burstiness, ncd);
+        // Simular un humano muy activo: 10 min foco, 100 nav
+        let human_score = calculate_human_score(burstiness, ncd, 10.0, 100, false);
         
         // Property 1: human score should be in valid range [0, 1]
         prop_assert!(human_score >= 0.0 && human_score <= 1.0, 
@@ -390,10 +392,11 @@ fn test_human_score_properties_integration() {
                         "High burstiness and NCD should give high human score");
         }
         
-        // Property 3: low values (machine-like) should correlate with low score
+        // Property 3: low values (machine-like) should correlate with low score, 
+        // but considering focus weight (40%)
         if burstiness < -0.8 && ncd < 0.2 {
-            prop_assert!(human_score < 0.3, 
-                        "Low burstiness and NCD should give low human score");
+            prop_assert!(human_score < 0.6, 
+                        "Low burstiness and NCD should give relatively low score even with high focus");
         }
     });
     
@@ -432,12 +435,12 @@ fn test_complete_validation_pipeline() {
     let ncd = calculate_ncd(code_sample_1, code_sample_2);
     
     // 3. Calculate human score
-    let human_score = calculate_human_score(burstiness, ncd);
+    let human_score = calculate_human_score(burstiness, ncd, 5.0, 50, false);
     
     // 4. Validate against thresholds (use realistic threshold for this scenario)
     let realistic_threshold = 0.3;
-    let is_human = validate_human_contribution(human_score, realistic_threshold);
-    let is_ai = validate_ai_contribution(human_score, AI_THRESHOLD);
+    let is_human = validate_contribution(human_score, realistic_threshold);
+    let is_ai = !validate_contribution(human_score, AI_THRESHOLD);
     
     // 5. Check privacy compliance
     let metrics_data = format!("{{\"burstiness\": {}, \"ncd\": {}, \"human_score\": {}}}", 

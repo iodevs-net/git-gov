@@ -108,29 +108,35 @@ impl IpcServer {
                                         }
                                     }
                                     Ok(Request::GetMetrics) => {
-                                        let (focus_time_mins, edit_bursts, is_focused) = if let Ok(ft) = focus_tracker_lock.read() {
+                                        let (focus_time_mins, edit_bursts, nav_events, is_synthetic_focus, is_focused) = if let Ok(ft) = focus_tracker_lock.read() {
                                             let m = ft.get_metrics();
-                                            (m.total_focus_mins, m.edit_burst_count, ft.is_focused())
+                                            (m.total_focus_mins, m.edit_burst_count, m.navigation_events, m.is_synthetic, ft.is_focused())
                                         } else {
-                                            (0.0, 0, false)
+                                            (0.0, 0, 0, false, false)
                                         };
 
                                         let coupling = coupling_lock.read().map(|g| *g).unwrap_or(1.0);
                                         let battery_level = battery_lock.read().map(|g| g.level).unwrap_or(0.0);
 
                                         if let Ok(m_guard) = metrics_lock.read() {
-                                            if let Some(m) = m_guard.as_ref() {
-                                                let human_score = calculate_human_score(m.burstiness, m.ncd);
-                                                
-                                                // Generar ZKP si el score es humano (>= threshold)
-                                                // Usamos un umbral fijo para la prueba del 50% por ahora
-                                                let zkp_proof = if human_score >= 0.5 {
-                                                    let score_u64 = (human_score * 100.0) as u64;
-                                                    HumanityProof::generate(score_u64, 50).ok()
-                                                } else {
-                                                    None
-                                                };
+                                            let (burstiness, ncd, is_synthetic_kinematic) = if let Some(m) = m_guard.as_ref() {
+                                                (m.burstiness, m.ncd, m.is_synthetic)
+                                            } else {
+                                                (0.0, 0.5, false) // Valores base
+                                            };
 
+                                            let is_synthetic = is_synthetic_focus || is_synthetic_kinematic;
+                                            let human_score = calculate_human_score(burstiness, ncd, focus_time_mins, nav_events, is_synthetic);
+                                            
+                                            // Generar ZKP si el score es humano (>= threshold)
+                                            let zkp_proof = if human_score >= 0.5 {
+                                                let score_u64 = (human_score * 100.0) as u64;
+                                                HumanityProof::generate(score_u64, 50).ok()
+                                            } else {
+                                                None
+                                            };
+
+                                            if let Some(m) = m_guard.as_ref() {
                                                 Response::Metrics {
                                                     ldlj: m.ldlj,
                                                     entropy: m.velocity_entropy,
@@ -148,13 +154,13 @@ impl IpcServer {
                                                     ldlj: 0.0,
                                                     entropy: 0.0,
                                                     throughput: 0.0,
-                                                    human_score: 0.5,
+                                                    human_score,
                                                     coupling,
                                                     battery_level,
                                                     focus_time_mins,
                                                     edit_bursts,
                                                     is_focused,
-                                                    zkp_proof: None,
+                                                    zkp_proof: zkp_proof.map(|_| "ZKP_ACTIVE_B64_PLACEHOLDER".to_string()),
                                                 }
                                             }
                                         } else {

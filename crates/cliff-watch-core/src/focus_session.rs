@@ -3,7 +3,7 @@
 //! Rastrea el tiempo de foco activo por archivo o workspace, permitiendo
 //! medir "Deep Work" sin requerir movimiento físico constante.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use serde::{Deserialize, Serialize};
@@ -21,6 +21,8 @@ pub struct FocusMetrics {
     pub unique_files: usize,
     /// Eventos de navegación (scroll, goto definition, etc.)
     pub navigation_events: usize,
+    /// Flag de detección de actividad sintética en navegación
+    pub is_synthetic: bool,
 }
 
 impl Default for FocusMetrics {
@@ -31,6 +33,7 @@ impl Default for FocusMetrics {
             chars_edited_net: 0,
             unique_files: 0,
             navigation_events: 0,
+            is_synthetic: false,
         }
     }
 }
@@ -96,10 +99,18 @@ pub struct FocusTracker {
     current_session: Option<FocusSession>,
     /// Archivos únicos tocados en la sesión global
     unique_files: HashMap<PathBuf, ()>,
-    /// Métricas acumuladas
+    /// Métricas acumuladas (globales, se filtrarán al exportar)
     cumulative: FocusMetrics,
     /// Timestamp del último heartbeat recibido
     last_heartbeat: Option<SystemTime>,
+    /// Últimos timestamps de navegación para análisis de síntesis
+    nav_timestamps: Vec<f64>,
+    /// Minutos acumulados POR ARCHIVO
+    file_focus_accum: HashMap<PathBuf, f64>,
+    /// Eventos de navegación POR ARCHIVO
+    file_nav_accum: HashMap<PathBuf, usize>,
+    /// Archivos que han tenido cambios VALIDADOS (productivos)
+    productive_files: HashSet<PathBuf>,
 }
 
 impl FocusTracker {
@@ -110,6 +121,10 @@ impl FocusTracker {
             unique_files: HashMap::new(),
             cumulative: FocusMetrics::default(),
             last_heartbeat: None,
+            nav_timestamps: Vec::with_capacity(100),
+            file_focus_accum: HashMap::new(),
+            file_nav_accum: HashMap::new(),
+            productive_files: HashSet::new(),
         }
     }
 
@@ -151,15 +166,25 @@ impl FocusTracker {
     }
 
     /// Registra un evento de navegación
-    pub fn navigation(&mut self, file_path: &str) {
+    pub fn navigation(&mut self, file_path: &str, timestamp_ms: u64) {
         let path = PathBuf::from(file_path);
-        self.unique_files.insert(path, ());
+        self.unique_files.insert(path.clone(), ());
 
         if let Some(ref mut session) = self.current_session {
             session.record_navigation();
         }
 
+        // Registrar navegación por archivo
+        let nav_count = self.file_nav_accum.entry(path).or_insert(0);
+        *nav_count += 1;
+
         self.cumulative.navigation_events += 1;
+        
+        // Registrar timestamp para análisis cinemático de navegación
+        self.nav_timestamps.push(timestamp_ms as f64);
+        if self.nav_timestamps.len() > 100 {
+            self.nav_timestamps.remove(0);
+        }
     }
 
     /// Registra un heartbeat
@@ -170,18 +195,55 @@ impl FocusTracker {
     /// Finaliza la sesión actual y acumula sus métricas
     fn finalize_current_session(&mut self) {
         if let Some(session) = self.current_session.take() {
-            self.cumulative.total_focus_mins += session.focus_minutes();
+            let mins = session.focus_minutes();
+            if let Some(path) = &session.file_path {
+                let accum = self.file_focus_accum.entry(path.clone()).or_insert(0.0);
+                *accum += mins;
+            }
+            self.cumulative.total_focus_mins += mins;
         }
     }
 
-    /// Obtiene las métricas actuales (incluyendo sesión en progreso)
-    pub fn get_metrics(&self) -> FocusMetrics {
-        let mut metrics = self.cumulative.clone();
-        metrics.unique_files = self.unique_files.len();
+    /// Marca un archivo como productivo (el foco en él contará para el score)
+    pub fn mark_as_productive(&mut self, path: PathBuf) {
+        self.productive_files.insert(path);
+    }
 
-        // Agregar tiempo de sesión actual en progreso
+    /// Obtiene las métricas actuales (FILTRADAS por productividad)
+    pub fn get_metrics(&self) -> FocusMetrics {
+        let mut metrics = FocusMetrics::default();
+        metrics.unique_files = self.productive_files.len();
+
+        // Calcular foco acumulado SOLO en archivos productivos
+        for (path, mins) in &self.file_focus_accum {
+            if self.productive_files.contains(path) {
+                metrics.total_focus_mins += mins;
+            }
+        }
+
+        // Sumar tiempo de sesión actual si el archivo es productivo
         if let Some(ref session) = self.current_session {
-            metrics.total_focus_mins += session.focus_minutes();
+            if let Some(path) = &session.file_path {
+                if self.productive_files.contains(path) {
+                    metrics.total_focus_mins += session.focus_minutes();
+                }
+            }
+        }
+
+        // Calcular eventos de navegación SOLO en archivos productivos
+        for (path, nav) in &self.file_nav_accum {
+            if self.productive_files.contains(path) {
+                metrics.navigation_events += nav;
+            }
+        }
+
+        // Pasar otros datos globales
+        metrics.edit_burst_count = self.cumulative.edit_burst_count;
+        metrics.chars_edited_net = self.cumulative.chars_edited_net;
+
+        // Detectar si el patrón de navegación es sintético (bot de scroll)
+        if crate::stats::is_synthetic_pattern(&self.nav_timestamps) {
+            metrics.is_synthetic = true;
         }
 
         metrics
@@ -244,6 +306,9 @@ mod tests {
         tracker.edit_burst("/src/main.rs", 50);
         tracker.edit_burst("/src/main.rs", -10);
         
+        // Marcar como productivo para que no se filtre en get_metrics
+        tracker.mark_as_productive(PathBuf::from("/src/main.rs"));
+
         // Verificar métricas
         let metrics = tracker.get_metrics();
         assert_eq!(metrics.edit_burst_count, 2);
@@ -262,6 +327,10 @@ mod tests {
         tracker.edit_burst("/b.rs", 20);
         tracker.edit_burst("/c.rs", 5); // Archivo diferente
         
+        tracker.mark_as_productive(PathBuf::from("/a.rs"));
+        tracker.mark_as_productive(PathBuf::from("/b.rs"));
+        tracker.mark_as_productive(PathBuf::from("/c.rs"));
+        
         let metrics = tracker.get_metrics();
         assert_eq!(metrics.unique_files, 3);
     }
@@ -273,6 +342,8 @@ mod tests {
         tracker.focus_gained(Some(PathBuf::from("/test.rs")));
         sleep(Duration::from_millis(100));
         tracker.focus_lost();
+
+        tracker.mark_as_productive(PathBuf::from("/test.rs"));
 
         let metrics = tracker.get_metrics();
         assert!(metrics.total_focus_mins > 0.0);

@@ -48,9 +48,9 @@ fn main() {
     let human_metrics = human_sentinel.analyze().expect("Failed to analyze human data");
     let bot_metrics = bot_sentinel.analyze().expect("Failed to analyze bot data");
 
-    // Utilizamos los valores calculados por el Sentinel
-    let human_score = calculate_human_score(human_metrics.burstiness, human_metrics.ncd);
-    let bot_score = calculate_human_score(bot_metrics.burstiness, bot_metrics.ncd);
+    // Utilizamos los valores calculados por el Sentinel (Gobernanza v4.0)
+    let human_score = calculate_human_score(human_metrics.burstiness, human_metrics.ncd, 1.0, 10, human_metrics.is_synthetic);
+    let bot_score = calculate_human_score(bot_metrics.burstiness, bot_metrics.ncd, 0.0, 0, bot_metrics.is_synthetic);
 
     println!("\n[ PERFIL HUMANO ]");
     println!("  LDLJ (Suavidad):    {:.4}", human_metrics.ldlj);

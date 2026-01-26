@@ -9,6 +9,7 @@ use std::time::Duration;
 use std::path::PathBuf;
 
 use cliff_watch_core::monitor::{GitMonitor, GitMonitorConfig, EditEvent, EditKind};
+use cliff_watch_core::focus_protocol::SensorEvent;
 use cliff_watch_core::mouse_sentinel::InputEvent;
 
 #[tokio::test]
@@ -20,12 +21,14 @@ async fn test_monitor_initialization() {
     };
     
     let (_input_tx, input_rx) = mpsc::channel(10);
+    let (_sensor_tx, sensor_rx) = mpsc::channel(10);
     let (_file_tx, file_rx) = mpsc::channel(10);
     let shutdown = CancellationToken::new();
     
     let _monitor = GitMonitor::new(
         config, 
         input_rx, 
+        sensor_rx,
         file_rx, 
         PathBuf::from("/tmp/cliff-watch-test"),
         shutdown.clone()
@@ -44,12 +47,14 @@ async fn test_monitor_event_capture() {
     };
     
     let (input_tx, input_rx) = mpsc::channel(10);
+    let (_sensor_tx, sensor_rx) = mpsc::channel(10);
     let (_file_tx, file_rx) = mpsc::channel(10);
     let shutdown = CancellationToken::new();
     
     let _monitor = GitMonitor::new(
         config, 
         input_rx,
+        sensor_rx,
         file_rx,
         PathBuf::from("/tmp/cliff-watch-test"),
         shutdown.clone()
@@ -68,7 +73,6 @@ async fn test_monitor_event_capture() {
     tokio::time::sleep(Duration::from_millis(50)).await;
     
     // Verificar que el evento fue capturado
-    // (En una implementación real, podríamos verificar el buffer del MouseSentinel)
 }
 
 #[tokio::test]
@@ -80,12 +84,14 @@ async fn test_monitor_shutdown() {
     };
     
     let (_input_tx, input_rx) = mpsc::channel(10);
+    let (_sensor_tx, sensor_rx) = mpsc::channel(10);
     let (_file_tx, file_rx) = mpsc::channel(10);
     let shutdown = CancellationToken::new();
     
     let monitor = GitMonitor::new(
         config, 
         input_rx, 
+        sensor_rx,
         file_rx,
         PathBuf::from("/tmp/cliff-watch-test"),
         shutdown.clone()

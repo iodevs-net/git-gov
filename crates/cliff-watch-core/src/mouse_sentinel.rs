@@ -47,7 +47,7 @@ pub enum MouseSentinelError {
     DegenerateMotion,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct KinematicMetrics {
     /// Log-Dimensional Less Jerk - métrica de suavidad de movimiento
     pub ldlj: f64,
@@ -61,6 +61,8 @@ pub struct KinematicMetrics {
     pub burstiness: f64,
     /// NCD - medida de complejidad algorítmica/compresibilidad
     pub ncd: f64,
+    /// Flag de detección de actividad sintética (bot/script)
+    pub is_synthetic: bool,
 }
 
 #[derive(Debug)]
@@ -197,6 +199,7 @@ impl MouseSentinel {
             _ => None,
         }).collect();
         let burstiness = crate::stats::calculate_burstiness(&timestamps);
+        let is_synthetic = crate::stats::is_synthetic_pattern(&timestamps);
 
         // Para NCD usamos la serie de velocidades como firma de comportamiento
         let v_bytes: Vec<u8> = v.iter()
@@ -213,6 +216,7 @@ impl MouseSentinel {
             throughput,
             burstiness,
             ncd,
+            is_synthetic,
         })
     }
 }
