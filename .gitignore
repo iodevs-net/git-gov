@@ -36,3 +36,8 @@ Thumbs.db
 # Node
 node_modules/
 /clients/vscode-witness/node_modules/
+
+# Local data & Dist
+/db.sqlite3
+/dist/
+/releases/
